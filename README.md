@@ -1,7 +1,8 @@
 # Claude plugins
 
 A [Claude plugin marketplace](https://code.claude.com/docs/en/plugin-marketplaces)
-with plugins by Pieter Rijken. The marketplace is called `piisgaaf`.
+with plugins by Pieter Rijken. The marketplace is called `piisgaaf`; Claude
+Desktop may show it under the repo's name instead.
 
 | Plugin | What it does |
 |--------|--------------|
@@ -24,7 +25,8 @@ with plugins by Pieter Rijken. The marketplace is called `piisgaaf`.
 
 ## Updates
 
-A new version is picked up when the marketplace is refreshed. In Claude Code,
+A new version is picked up when the marketplace is refreshed. In Claude
+Desktop, use **Sync** under **Manage marketplaces**. In Claude Code,
 run `/plugin marketplace update piisgaaf`, or turn on auto-update for the
 `piisgaaf` marketplace under `/plugin` → **Marketplaces**.
 
