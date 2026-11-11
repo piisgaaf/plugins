@@ -6,5 +6,15 @@
   "metadata": {
     "description": "Claude plugins by Pieter Rijken"
   },
-  "plugins": []
+  "plugins": [
+    {
+      "name": "personal-chess-coach",
+      "description": "Personal chess coach powered by Stockfish. Analyzes positions and games, explains moves, identifies openings, classifies mistakes, and builds a player profile over time.",
+      "source": {
+        "source": "archive",
+        "url": "https://raw.githubusercontent.com/piisgaaf/plugins/main/plugins/personal-chess-coach-0.2.11.zip",
+        "sha256": "71587e3e8acdb20852a8886d8458beb851b16a7c614af8ad6ae92c922b0d7bbf"
+      }
+    }
+  ]
 }
