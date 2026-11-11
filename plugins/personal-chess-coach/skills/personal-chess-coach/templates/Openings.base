@@ -1,0 +1,41 @@
+filters:
+  and:
+    - file.hasTag("opening-position")
+formulas:
+  position: "file.asLink()"
+properties:
+  formula.position:
+    displayName: Position
+  note.opening:
+    displayName: Opening
+  note.eco:
+    displayName: ECO
+  note.side_to_move:
+    displayName: To move
+  note.plans:
+    displayName: Plans studied
+  note.updated:
+    displayName: Updated
+views:
+  - type: table
+    name: By opening
+    groupBy:
+      property: note.opening
+      direction: ASC
+    order:
+      - formula.position
+      - note.eco
+      - note.side_to_move
+      - note.plans
+      - note.updated
+  - type: table
+    name: By ECO
+    groupBy:
+      property: note.eco
+      direction: ASC
+    order:
+      - formula.position
+      - note.opening
+      - note.side_to_move
+      - note.plans
+      - note.updated

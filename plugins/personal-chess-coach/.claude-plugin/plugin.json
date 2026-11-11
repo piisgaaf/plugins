@@ -1,0 +1,8 @@
+{
+  "author": {
+    "name": "Pieter Rijken"
+  },
+  "description": "Personal chess coach powered by Stockfish. Analyzes positions and games, explains moves, identifies openings, classifies mistakes, and builds a player profile over time.",
+  "name": "personal-chess-coach",
+  "version": "0.2.12"
+}
