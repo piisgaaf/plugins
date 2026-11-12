@@ -48,6 +48,7 @@ The **Player Profile** is the central domain model. Every analysis enriches or c
 ## 1.2.  MCP tools (chess server)
 
 All chess engine interaction goes through the `chess` MCP server.
+Always use the chess_engine tools for technical chess work.
 
 ### 1.2.1.  Engine tools
 
@@ -88,7 +89,7 @@ All chess engine interaction goes through the `chess` MCP server.
 
 **`from_ply` guidance:** Set to 15 (default) to skip the first 7–8 opening moves. Set to 1 to evaluate the entire game. For F08 mistake classification, the default of 15 is appropriate.
 
-**FEN handling rule:** Never construct or retype FEN strings manually. Always use `fen_before` or `fen_after` from `load_pgn` or `evaluate_game` ply list, or the FEN returned by any other tool, directly. Transcription errors produce invalid FENs silently and will cause tool failures downstream.
+**FEN handling rule:** See §1.2.7 — use fen_before/fen_after directly.
 
 **Move verification rule:** Never present a move returned by `get_variation` or `get_best_move` to the user without first verifying it is legal with `apply_move`. A variation is a *sequence*: verify it ply by ply, applying each move to the FEN returned for the previous move, never every move against the original FEN. For a `get_variation` result with `hypothetical: true`, start from the null-move position (same board, side to move flipped, en-passant cleared), not from the original FEN. If `apply_move` returns an error, the move is illegal — discard it, call `get_best_move` again with the correct FEN, and verify the new suggestion before presenting it.
 
@@ -105,6 +106,22 @@ Engine output is easy to misread when it is Black's move. Apply these rules to e
 ### 1.2.6.  Engine line vs. `top_moves[].pv`
 
 `analyze_position`'s `top_moves[].pv` and `get_threats`' `pv` are the continuation **after** the candidate move: their first entry is the *opponent's* reply. `get_variation`'s `moves` is the full line, starting with the side to move's move.
+
+### 1.2.7.  FEN integrity
+
+Never construct, retype or modify a FEN yourself. A FEN may come only from:
+
+- the user (typed or pasted), or
+- a tool result: `validate_fen`, `apply_move`, `load_pgn`, `evaluate_game`, or any other chess tool.
+
+To reach a position from a game or move list, replay the moves with `apply_move`
+(or `load_pgn`) and use the FEN it returns. Do not adjust a FEN by hand to change
+side to move, castling rights, en passant or move counters: derive the position
+with a tool instead, or ask the user.
+
+**The only exception is a board picture:** you may read a FEN from an image the
+user provides, but only by following [input/board-image.md](input/board-image.md).
+That FEN must pass that procedure before any analysis uses it.
 
 ---
 
@@ -155,7 +172,7 @@ Accept: a single number, a comma-separated list, a range ("2–4"), or "all". On
 
 When the user provides a position or game, determine which feature applies:
 
-1. **Bare position / FEN / board diagram** → [f01-analyze-position.md](r01-understand-my-chess/f01-analyze-position.md)
+1. **Bare position / FEN / board diagram / board picture** → [f01-analyze-position.md](r01-understand-my-chess/f01-analyze-position.md). For a board picture or a board diagram, first follow [input/board-image.md](input/board-image.md) to obtain a checked FEN (§1.2.7)
 2. **"Why is X the best move?" or "Explain this move"** → [f02-explain-best-move.md](r01-understand-my-chess/f02-explain-best-move.md)
 3. **User gives 2+ moves and asks which is better / to compare them** → [f03-compare-candidate-moves.md](r01-understand-my-chess/f03-compare-candidate-moves.md)
 4. **User asks about an opening by name, or asks for typical plans/continuations rather than asking to evaluate a specific move** → [f04-understand-opening-positions.md](r01-understand-my-chess/f04-understand-opening-positions.md). A question about one side's plan in a *specific position* (a FEN) is not an opening question: route it to F01, and if that side is not to move, apply §1.5.1

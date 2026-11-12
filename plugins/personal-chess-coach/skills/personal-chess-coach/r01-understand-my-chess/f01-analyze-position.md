@@ -41,10 +41,15 @@ A correct implementation demonstrates:
 Accept any of:
 
 - A raw FEN string (e.g. `rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1`)
-- A position described in natural language ("after 1.e4 e5 2.Nf3")
+- A position described in natural language or as a move sequence ("after 1.e4 e5 2.Nf3")
 - A board diagram pasted as text
+- A board picture (image)
 
-If the input is natural language or a move sequence rather than a FEN, derive or request the FEN before proceeding.
+How to obtain the FEN (never construct one by hand — see [SKILL.md §1.2.7](../SKILL.md#127--fen-integrity)):
+
+- **Move sequence:** replay the moves with `apply_move` from the starting position and use the returned FEN.
+- **Position described only in words, without moves:** ask the user for the moves or a FEN.
+- **Board diagram or board picture:** follow [input/board-image.md](../input/board-image.md) completely before Step 2.
 
 ### 1.5.2.  Step 2 — Validate
 
