@@ -60,7 +60,7 @@ If not found (position too deep, or off the beaten path), say so plainly and fal
 
 ### 1.5.5.  Step 5 — Get typical continuations (conditional on Step 4 succeeding)
 
-Call `get_opening_continuations` on the same FEN/moves, using a rating band appropriate to the player (default to a club-level band, roughly 1800–2000, unless the player's profile indicates otherwise).
+Call `get_opening_continuations` on the same FEN/moves, using a rating band appropriate to the player (default to a club-level band, roughly 1800–2000, unless a player profile already read in this conversation indicates otherwise; never resolve a profile just for this).
 
 If the call succeeds, capture the top 3–5 continuations with their frequency and score tendencies (win/draw/loss), for use in Step 7. Do not surface raw frequency percentages or rating numbers as the headline of the explanation — use them to support statements like "most club players continue with..." or "this is by far the most common choice at this level."
 
@@ -104,7 +104,7 @@ End with a targeted offer:
 - "Want me to analyze a specific continuation from here?" → triggers F01
 - "Shall I compare two of these typical replies?" → triggers F03
 - "Want to see why one particular line is currently considered best?" → triggers F02
-- "Save to your notebook?" → triggers [F36](f36-opening-notebook.md) (see its §1.6 for when to ask)
+- "Save to your notebook?" → triggers [F36](f36-opening-notebook.md) (see its §1.6 for when to ask; only with a working folder, [SKILL.md §1.7.1](../SKILL.md#171--working-folder-decide-once-per-conversation))
 
 ---
 

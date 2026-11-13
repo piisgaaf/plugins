@@ -37,6 +37,8 @@ F10 always runs after at least one of F05, F06, F07, F08, or F09 has completed i
 
 F10 can also run in a standalone session if the user explicitly asks about their thinking habits. In that case, load the Thinking Profile from the Player Profile and provide a summary of observed patterns, then offer to ask questions about a specific game.
 
+Without a working folder ([SKILL.md §1.7.3](../SKILL.md#173--without-a-working-folder)), the standalone summary is not available. After a game analysis in this conversation, ask the questions and interpret the answers as usual, but skip Steps 1 and 6 and do not refer to patterns from earlier sessions.
+
 F10 does not re-classify mistakes (F08's job) or diagnose root causes mechanically (F09's job). It elicits the player's own account of their thought process, then interprets that account to update the profile.
 
 ---
@@ -135,7 +137,7 @@ After interpreting the player's reflective answers:
 
 ### 1.7.1.  Step 1 — Read the Player Profile
 
-Read the current profile (following the rule in [SKILL.md §1.6](../SKILL.md#16--player-profile)). Hold the existing `thinking_profile` in context — it informs how questions are framed and whether a new observation confirms or contradicts a prior pattern.
+Skip this step without a working folder (§1.5). Otherwise read the current profile (following the rule in [SKILL.md §1.7](../SKILL.md#17--player-profile)). Hold the existing `thinking_profile` in context — it informs how questions are framed and whether a new observation confirms or contradicts a prior pattern.
 
 If `thinking_profile` is absent (first F10 run), add the skeleton from §1.6.1.
 
@@ -204,6 +206,8 @@ Reference the existing `thinking_profile` where relevant — make it clear the c
 
 ### 1.7.6.  Step 6 — Update the Player Profile
 
+Skip this step without a working folder (§1.5).
+
 Apply the write rule from §1.6.4. Write the updated profile back to the profile file (full overwrite — read first, merge in memory, then write). Update the `# Last updated` comment at the top of the file.
 
 ### 1.7.7.  Step 7 — Offer next steps
@@ -231,7 +235,7 @@ After delivering the thinking summary, offer:
 
 ## 1.9.  Quality checklist
 
-Before delivering output, verify:
+Before delivering output, verify (without a working folder, skip the items about the Player Profile):
 
 - [ ] Player Profile was read before any questions were asked
 - [ ] The board was shown (per show-board.md) for each anchor position before the question about it

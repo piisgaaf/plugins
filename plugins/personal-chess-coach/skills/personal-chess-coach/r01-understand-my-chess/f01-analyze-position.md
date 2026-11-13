@@ -116,7 +116,7 @@ End with a short offer:
 - "Shall I show the main continuation a few moves further?"
 - "Would you like to know the typical plans for both sides from here?"
 
-Then offer to save the position to the notebook: see [F36 §1.6](f36-opening-notebook.md#16--when-to-offer-saving).
+Then, if a working folder is available ([SKILL.md §1.7.1](../SKILL.md#171--working-folder-decide-once-per-conversation)), offer to save the position to the notebook: see [F36 §1.6](f36-opening-notebook.md#16--when-to-offer-saving).
 
 ---
 
@@ -146,4 +146,4 @@ If the asked side's ideas are still unclear, call `get_variation` with `for_side
 
 Use the "The plan" heading from §1.5.6, written for the asked side. Keep the evaluation White-perspective: a positive score means White is better, even though Black is to move.
 
-End with "Save to your notebook?" ([F36 §1.6](f36-opening-notebook.md#16--when-to-offer-saving)), also when the position is past the opening book.
+If a working folder is available ([SKILL.md §1.7.1](../SKILL.md#171--working-folder-decide-once-per-conversation)), end with "Save to your notebook?" ([F36 §1.6](f36-opening-notebook.md#16--when-to-offer-saving)), also when the position is past the opening book.

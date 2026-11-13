@@ -6,7 +6,7 @@
         "${CLAUDE_PLUGIN_ROOT}/mcp_stdio_http_proxy.mjs"
       ],
       "env": {
-        "MCP_HTTP_HOST": "chesspi",
+        "MCP_HTTP_HOST": "chesspi.local",
         "MCP_HTTP_PORT": "4100",
         "MCP_HTTP_PATH": "/mcp",
         "MCP_HTTP_TIMEOUT_MS": "120000",

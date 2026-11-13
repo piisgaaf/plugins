@@ -28,8 +28,13 @@ Just talk to Claude:
 - "Analyze my game" (then paste a PGN)
 - "What kind of mistakes do I keep making?"
 
-The first time, the coach asks which player profile to use, or offers to
-create one for you.
+Analyzing positions, openings and games works in a normal chat in Claude
+Desktop. Getting to know you as a player (your mistakes, style, weaknesses and
+progress) and the opening notebook need **Cowork with a project folder**: that
+is where your player profile and notes are saved. The first time you use one
+of those features, the coach asks which player profile to use, or offers to
+create one for you. In a normal chat it can still classify the mistakes in a
+game, but nothing is saved.
 
 ## What it needs
 

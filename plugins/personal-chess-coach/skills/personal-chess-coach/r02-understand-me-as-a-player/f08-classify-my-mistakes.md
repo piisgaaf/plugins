@@ -42,6 +42,8 @@ The Player Profile is stored as `<name>.yaml` in the root of the working folder 
 
 Which profile to use is resolved following the rule in [SKILL.md §1.7](../SKILL.md#17--player-profile): use the filename from the project instructions if specified, otherwise ask the user.
 
+**Without a working folder** ([SKILL.md §1.7.3](../SKILL.md#173--without-a-working-folder)): classify the game as usual (Steps 3–5, 7 and 8), but skip Step 1 (profile), Step 2 (deduplication against the profile) and Step 6 (profile update), and say once that nothing is saved.
+
 ### 1.5.2.  Read rule
 
 At the start of every F08 run, read the profile file. If it does not exist, create it with the skeleton from section 1.5.3. Never start with an empty profile — always read first to avoid overwriting prior data.
@@ -251,6 +253,8 @@ Note: the `root_cause` field is added to examples by F09, not F08. F08 examples 
 
 ### 1.6.1.  Step 1 — Resolve and read the Player Profile
 
+Skip this step without a working folder (§1.5.1).
+
 Resolve which profile to use following the rule in [SKILL.md §1.7](../SKILL.md#17--player-profile): use the filename specified in the project instructions, or ask the user if not specified (listing any `*.yaml` files already in the project root as options).
 
 Read the resolved profile file. Hold the current values in context throughout the session — they are needed for the additive update in Step 6.
@@ -322,7 +326,7 @@ Apply the [classification rules](../codebook/mistake-taxonomy.md#111--classifica
 
 ### 1.6.6.  Step 6 — Update the Player Profile
 
-Apply the write rule from section 1.5.4. Write the updated profile file.
+Apply the write rule from section 1.5.4. Write the updated profile file. Skip this step without a working folder (§1.5.1).
 
 ### 1.6.7.  Step 7 — Deliver the mistake classification
 
@@ -361,7 +365,7 @@ End with a targeted offer based on the dominant weakness category:
 
 ## 1.7.  Quality checklist
 
-Before delivering output, verify:
+Before delivering output, verify (without a working folder, skip the items about the Player Profile):
 
 - [ ] Player Profile was read before analysis — no prior data was discarded
 - [ ] PGN hash was computed and checked against `analyzed_games` before any engine calls

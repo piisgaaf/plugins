@@ -134,7 +134,7 @@ After deriving the style profile:
 
 ### 1.7.1.  Step 1 — Read the Player Profile
 
-Read the current profile (following the rule in [SKILL.md §1.7](../SKILL.md#17--player-profile)). If `playing_style`, `strengths`, or `preferred_openings` sections are absent, add the skeletons from §1.6.1.
+Without a working folder ([SKILL.md §1.7.3](../SKILL.md#173--without-a-working-folder)), do not run this feature: say in one line that it needs a saved player profile (Cowork with a project folder), and offer to analyze or classify a game instead. Otherwise read the current profile (following the rule in [SKILL.md §1.7](../SKILL.md#17--player-profile)). If `playing_style`, `strengths`, or `preferred_openings` sections are absent, add the skeletons from §1.6.1.
 
 Check `mistake_summary.games_analyzed`. If fewer than 5, note this to the user (see §1.5) and proceed with reduced confidence.
 

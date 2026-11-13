@@ -54,6 +54,8 @@ Templates for all three files are in this skill's `templates/` folder: [opening-
 
 ## 1.6.  When to offer saving
 
+The notebook needs a working folder ([SKILL.md §1.7.1](../SKILL.md#171--working-folder-decide-once-per-conversation)). Without one, never offer saving; if the user asks to save, say in one line that the notebook needs Cowork with a project folder ([SKILL.md §1.7.3](../SKILL.md#173--without-a-working-folder)), and write nothing.
+
 After answering about a specific position (F01, including a plan question per F01 §1.6, or F04), end with one short question: **"Save to your notebook?"** Ask this whether or not the position is in the opening book, and at any move number: the positions worth saving are often just past the book.
 
 - Ask once per position. If the user declines, do not ask again for that position in this conversation.

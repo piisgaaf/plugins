@@ -39,7 +39,7 @@ F09 always operates on a mistake already identified by F08. The input to F09 is:
 
 F09 can run:
 1. **Immediately after F08** — the user asks "why did I make that mistake?" during the same session. All data is in context.
-2. **In a later session** — the user references a previously analyzed game. Read the Player Profile to locate the game in `analyzed_games`, then re-run `load_pgn` and `evaluate_move` for the specific position if needed.
+2. **In a later session** (only with a working folder, [SKILL.md §1.7.3](../SKILL.md#173--without-a-working-folder)) — the user references a previously analyzed game. Read the Player Profile to locate the game in `analyzed_games`, then re-run `load_pgn` and `evaluate_move` for the specific position if needed.
 
 F09 never re-classifies the category or motif — that is F08's job. F09 only adds the root-cause layer.
 
@@ -124,6 +124,8 @@ After diagnosing a mistake:
 
 If F08 has already run in this session, the classified mistakes are in context. Confirm with the user which mistake(s) to diagnose, or proceed with the one(s) they referenced.
 
+Without a working folder, F09 only diagnoses mistakes classified earlier in this conversation; if there are none, offer to classify a game first (F08).
+
 If this is a standalone F09 request (new session), ask which game and move number the user wants to investigate. Re-read the Player Profile to locate the game; if needed, re-run `load_pgn` and `evaluate_move` for that position.
 
 ### 1.7.2.  Step 2 — Show the position
@@ -170,7 +172,7 @@ Do not expose raw centipawn scores or engine lines without context. Reference th
 
 ### 1.7.6.  Step 6 — Update the Player Profile
 
-Apply the write rule from section 1.6.3. Write the updated profile back to the profile file (full overwrite — read first, merge in memory, then write).
+Apply the write rule from section 1.6.3. Write the updated profile back to the profile file (full overwrite — read first, merge in memory, then write). Skip this step without a working folder.
 
 ### 1.7.7.  Step 7 — Offer next steps
 
@@ -183,7 +185,7 @@ After each root-cause explanation, offer:
 
 ## 1.8.  Quality checklist
 
-Before delivering output, verify:
+Before delivering output, verify (without a working folder, skip the items about the Player Profile):
 
 - [ ] The board was shown (per show-board.md) before the explanation
 - [ ] `get_variation` was called to confirm the correct continuation

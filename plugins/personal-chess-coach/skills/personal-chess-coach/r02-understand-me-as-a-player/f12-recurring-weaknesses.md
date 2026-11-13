@@ -47,7 +47,7 @@ F12 always delivers output, regardless of game count. The reliability note infor
 
 ### 1.6.1.  Step 1 — Read the Player Profile
 
-Read the profile following the rule in [SKILL.md §1.7](../SKILL.md#17--player-profile). If `mistake_categories` is absent or all counts are zero, tell the user:
+Without a working folder ([SKILL.md §1.7.3](../SKILL.md#173--without-a-working-folder)), do not run this feature: say in one line that it needs a saved player profile (Cowork with a project folder), and offer to analyze or classify a game instead. Otherwise read the profile following the rule in [SKILL.md §1.7](../SKILL.md#17--player-profile). If `mistake_categories` is absent or all counts are zero, tell the user:
 
 > *"No mistakes have been classified yet. Analyze a game with F08 first."*
 

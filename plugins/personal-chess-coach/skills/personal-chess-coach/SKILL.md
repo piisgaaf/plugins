@@ -12,7 +12,7 @@ Unlike traditional chess software that answers **"What is the best move?"**, thi
 - What plan does it support?
 - Why is my candidate move weaker?
 
-The **Player Profile** is the central domain model. Every analysis enriches or consumes it.
+The **Player Profile** is the central domain model of the features that get to know the player (F08–F13). Analyzing positions, openings and games (F01–F07, F35) needs no profile and works in a normal Claude Desktop chat as well as in Cowork: see §1.7.
 
 ---
 
@@ -152,9 +152,9 @@ For each game in the PGN, show a one-sentence summary with:
 - **Index** (Game 1, Game 2, …)
 - **Date** — from the `[Date]` tag, or "date unknown"
 - **Event** — from the `[Event]` tag, or "no event"
-- **Color** — the side the player (identified by their aliases in the project instructions) played; if neither player matches an alias, list both sides
+- **Color** — the side the player (identified by their aliases in the project instructions) played; if there are no aliases, or neither player matches one, list both sides
 - **Time control** — derive from the `[TimeControl]` tag: ≤ 600 s per side = Blitz, 601–2999 s = Rapid, ≥ 3000 s = Classical; if tag is absent or unparseable, omit the field
-- **Already analyzed?** — check the player profile's `analyzed_games` list (see §1.7); mark it ✓ if already present, leave blank if not
+- **Already analyzed?** — only when a profile is in use (§1.7.2): check its `analyzed_games` list and mark the game ✓ if present. Without a profile, leave this field out; do not resolve a profile just for this list
 
 Example row: `Game 2 — 2025-11-03, Lichess Blitz, played Black, Blitz ✓`
 
@@ -191,6 +191,8 @@ When the user provides a position or game, determine which feature applies:
 
 Always validate any FEN with `validate_fen` before analysis.
 
+Routes 8–13 (F08–F13) use the Player Profile and route 15 (F36) writes notes: both need a working folder. Before following them, apply §1.7.1 and §1.7.3.
+
 ### 1.5.1.  Plan for a side that is not to move
 
 When the user asks for a side's plan, ideas or intentions ("what is White's plan?") and that side is **not** to move in the FEN, route to [f01-analyze-position.md](r01-understand-my-chess/f01-analyze-position.md) and follow its section "Plan for the side not to move". In short:
@@ -210,13 +212,40 @@ Whenever a feature file says "show the board", follow [rendering/show-board.md](
 
 ## 1.7.  Player Profile
 
-The Player Profile is the central domain model. It accumulates structured knowledge about the player across sessions and is consumed by F08 and all later features.
+The Player Profile is the central domain model of F08–F13. It accumulates structured knowledge about the player across sessions.
 
 **Location:** `<name>.yaml` in the root of the **working folder**: the folder the user has mounted (the Cowork project folder, which may be an Obsidian vault or a subfolder of it). The opening notebook ([F36](r01-understand-my-chess/f36-opening-notebook.md)) lives in the same folder. This is a plain YAML file on the user's computer — no database or external service required.
 
-**Resolving which profile to use:**
+### 1.7.1.  Working folder: decide once per conversation
+
+Decide from your own tools, before the first feature that needs it, and keep the decision for the rest of the conversation. Never ask the user.
+
+- **Working folder available:** you can read and write files in a folder the user mounted (Cowork with a project folder).
+- **No working folder:** a normal Claude Desktop chat, or Cowork without a project folder. Do not look for another place to store the profile, and do not ask the user for a path. A code sandbox (e.g. `/mnt/user-data/`) is not a working folder: files there do not last beyond the conversation.
+
+### 1.7.2.  When to resolve the profile
+
+Resolve and read the profile only when the conversation routes to one of F08–F13. Never at the start of a session, and never for F01–F07, F35 or F36: those features do not use it.
+
+**Resolving which profile to use** (only with a working folder):
 1. If the project instructions (e.g. a system prompt or Cowork configuration) specify a profile filename, use that file.
-2. Otherwise, ask the user at the start of the session: *"Which player profile should I use?"* List any `*.yaml` files present in the working folder's root as options, plus an option to create a new one.
+2. Otherwise, ask the user: *"Which player profile should I use?"* List any `*.yaml` files present in the working folder's root as options, plus an option to create a new one.
+
+### 1.7.3.  Without a working folder
+
+| Feature | What to do |
+|---|---|
+| F01–F07, F35 | Work as usual: they never use the profile |
+| F04 | Use the default rating band (F04 Step 5) |
+| F08 — Classify My Mistakes | Classify the mistakes of this game as usual; skip the profile steps (F08 Steps 1, 2 and 6: reading, deduplication, update) |
+| F09 — Root cause | Only for mistakes classified earlier in this conversation; skip the profile update |
+| F10 — How I think | Ask the reflective questions and interpret the answers as usual; skip reading and updating the profile, and do not refer to patterns from earlier sessions |
+| F11, F12, F13 | Do not run: they read only accumulated profile data. Say so in one line (see below) and offer to analyze or classify a game instead |
+| F36 — Notebook | Do not offer "Save to your notebook?". If the user asks to save, say so in one line (see below) |
+
+Say once per conversation, in one short line, why nothing is saved, e.g.: *"(Not saved: your player profile and opening notebook need Cowork with a project folder.)"* Do not repeat it after every answer.
+
+### 1.7.4.  Rules for reading and writing
 
 **Read rule:** Any feature that reads or writes the profile must read the current file at the start of the session. Never assume the profile is empty — always read first to avoid overwriting prior data.
 
