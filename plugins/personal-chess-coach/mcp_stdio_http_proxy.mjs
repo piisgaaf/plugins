@@ -2,6 +2,12 @@
 import readline from "node:readline";
 import { request as httpRequest } from "node:http";
 import { request as httpsRequest } from "node:https";
+import dns from "node:dns";
+
+// Try IPv4 addresses first: on Windows, mDNS names like chesspi.local often
+// also resolve to an IPv6 address that doesn't answer, and Node then hangs
+// until the timeout instead of falling back to IPv4.
+dns.setDefaultResultOrder("ipv4first");
 
 const HOST = process.env.MCP_HTTP_HOST ?? "127.0.0.1";
 const PORT = Number(process.env.MCP_HTTP_PORT ?? "4000");
