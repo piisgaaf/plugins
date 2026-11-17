@@ -26,7 +26,6 @@ A correct implementation demonstrates:
 - The same position reached through another move order lands on the same card
 - The same opening played from both sides gives one card in `White/` and one in `Black/`, each written from that side
 - "Make this key position its own card" turns a key position into a branch card
-- Notes in the old layout are found, and with the user's yes folded into cards and moved out of the way
 - Text the user wrote under "My notes" is never changed, and nothing is written without the user's yes
 
 ---
@@ -81,27 +80,19 @@ Rules:
 - If the user says "add this to my notebook" (or similar), or names an opening to add, save without asking.
 - Never save without the user's yes.
 
-Before writing, say in one line what will happen, so the user can change it (Step 4 decides it):
+Before writing, say in one line what will happen, so the user can change it (Step 3 decides it):
 
 > *New card for the Najdorf, starting after 6.Be3 e5.*
 > *Key position 9.Qd2 Nbd7 10.f3 on your card "Najdorf 6.Be3 e5": same plans.*
 > *New branch of "Najdorf 6.Be3 e5" after 7.Nf3: White's knight goes to f3 instead of b3, which changes Black's plan.*
 
-If the user asks for another starting position ("start the card from here", "start after 6.Be3") or for a branch instead of a key position (or the other way round), follow that. When the user asked to save straight away, put this line in the confirmation (Step 7) instead.
+If the user asks for another starting position ("start the card from here", "start after 6.Be3") or for a branch instead of a key position (or the other way round), follow that. When the user asked to save straight away, put this line in the confirmation (Step 6) instead.
 
 ---
 
 ## 1.7.  Workflow
 
-### 1.7.1.  Step 1 — Look for notes in the old layout (once per conversation)
-
-The first time F36 runs in a conversation, check `Openings/` for notes in the old layout: notes tagged `opening-position`, or hub notes (tagged `opening`, without `opening-card`) with a "Positions" list. If there are any, and the user has not declined this in this conversation, ask once:
-
-> *"Your notebook has N notes in the old layout (one note per position). Shall I fold them into opening cards? The old notes are moved to `Openings/Old layout/`, not deleted."*
-
-Yes → §1.8 (migration), then continue with Step 2. No → continue with Step 2 and leave the old notes alone.
-
-### 1.7.2.  Step 2 — Collect the facts
+### 1.7.1.  Step 1 — Collect the facts
 
 Gather from the conversation (call a tool only if missing):
 
@@ -114,26 +105,26 @@ Gather from the conversation (call a tool only if missing):
 - **The ideas** that came up in the conversation: plans for both sides, structure, piece placement, pawn breaks, tactics, the mistake that was made in the game.
 - **Today's date** (`YYYY-MM-DD`; from the conversation context, or by running `date +%F`).
 
-### 1.7.3.  Step 3 — Read the side folder
+### 1.7.2.  Step 2 — Read the side folder
 
 List the cards (tag `opening-card`) in `Openings/White/` or `Openings/Black/`, for the repertoire side only. For each, note its name, `moves`, `fen`, `positions` and `parent`. Cards of the other side are never used.
 
-### 1.7.4.  Step 4 — Decide: key position, branch or new card
+### 1.7.3.  Step 3 — Decide: key position, branch or new card
 
 Compare FENs by their **first four fields** (pieces, side to move, castling, en passant) and ignore the move counters, so a position reached by another move order is the same position. Get the FENs along the analysed line with `apply_move` when needed.
 
-1. **The analysed position is a card's `fen` or in its `positions`** → update that card (Step 6) with the new ideas.
+1. **The analysed position is a card's `fen` or in its `positions`** → update that card (Step 5) with the new ideas.
 2. **A card's starting position lies on the analysed line** (one of the FENs along it equals a card's `fen`; take the deepest such card) → decide from chess knowledge:
-   - **Same plans:** the position deepens that card's plans (a natural continuation, a move-order detail, a typical moment in the middlegame that follows) → **key position** on that card (Step 6).
-   - **The plans change:** after that card's starting position, the opponent made a choice that calls for a different plan (another set-up, another pawn structure, another side of the board) → **branch card** (Step 5), with that card as `parent`. Its starting position is where the new plans are set, usually a few plies after the opponent's choice, at the end of the important variation.
+   - **Same plans:** the position deepens that card's plans (a natural continuation, a move-order detail, a typical moment in the middlegame that follows) → **key position** on that card (Step 5).
+   - **The plans change:** after that card's starting position, the opponent made a choice that calls for a different plan (another set-up, another pawn structure, another side of the board) → **branch card** (Step 4), with that card as `parent`. Its starting position is where the new plans are set, usually a few plies after the opponent's choice, at the end of the important variation.
    - Only a choice of the **opponent** creates a branch; the user's own deviation from their repertoire is a key position (with the idea why it is worse or fine), unless the user asks for a branch.
-3. **No card's starting position lies on the line** → **new top-level card** (Step 5). Its starting position is the end of the main line or important variation that the analysed position belongs to, where the plans are set; not the analysed position itself when that is deeper. If the analysed position is deeper, it also becomes the card's first key position.
+3. **No card's starting position lies on the line** → **new top-level card** (Step 4). Its starting position is the end of the main line or important variation that the analysed position belongs to, where the plans are set; not the analysed position itself when that is deeper. If the analysed position is deeper, it also becomes the card's first key position.
 
 If an existing top-level card's starting position lies on the line of a **new** top-level card (the new one starts earlier), make the new card and add the existing one to its "Branches" with `parent` set, rather than duplicating its ideas.
 
 Tell the user what was decided (§1.6), then continue.
 
-### 1.7.5.  Step 5 — Create a card
+### 1.7.4.  Step 4 — Create a card
 
 0. **Folders:** create `Openings/` and the side folder if they do not exist, with a command (`mkdir -p "<working folder>/Openings/Black"`), not by relying on the file tool to create parent folders. (`Openings/boards/` is created by the script.)
 1. **Overview table:** if `Openings/Openings.base` does not exist, copy [templates/Openings.base](../templates/Openings.base) there unchanged.
@@ -141,22 +132,22 @@ Tell the user what was decided (§1.6), then continue.
    - Remove characters that Obsidian forbids or that break links: `: * " \ / < > | ? # ^ [ ]`, and also `+` and `!`. Collapse double spaces.
    - If a card with another starting position already has this name in the side folder, append the next ply of the line, until the name is free.
 3. **Boards:** save the board of the starting position, and of each key position, in `Openings/boards/` ([show-board.md §1.5](../rendering/show-board.md)), from the repertoire side: `--flip` for Black. Use the file names the script prints.
-4. **Card:** create `Openings/<side folder>/<name>.md` from [templates/opening.md](../templates/opening.md). Fill **every** section for this starting position, from the conversation and from chess knowledge (as [F04 Step 6](f04-understand-opening-positions.md#156--step-6--compose-the-plans-from-chess-knowledge-not-a-tool)), so the card is useful from the start. "My plan" is the repertoire side's plan. Add the key position, if any, under "Key positions" and its FEN to `positions`. Leave "Branches" empty unless Step 4 linked an existing card. Write "In short" last. Leave "My notes" empty.
+4. **Card:** create `Openings/<side folder>/<name>.md` from [templates/opening.md](../templates/opening.md). Fill **every** section for this starting position, from the conversation and from chess knowledge (as [F04 Step 6](f04-understand-opening-positions.md#156--step-6--compose-the-plans-from-chess-knowledge-not-a-tool)), so the card is useful from the start. "My plan" is the repertoire side's plan. Add the key position, if any, under "Key positions" and its FEN to `positions`. Leave "Branches" empty unless Step 3 linked an existing card. Write "In short" last. Leave "My notes" empty.
 5. **Branch card only:** set `parent` and the "Branch of" line. A branch card holds what is **different** from its parent; it does not repeat the parent's ideas that still hold, but may say so in one bullet ("Black's …d5 break from the parent card still applies").
 6. **Parent:** add a line to the parent's "Branches" section (`- 7.Nf3 → [[Black/<name>]]: …`) and set the parent's `updated` to today. Change nothing else in the parent.
 
 What a card never holds: engine lines, evaluations or centipawn scores, side lines, move-order theory beyond the line to its starting position, or the moves of a whole game. Keep each bullet to one idea in one or two sentences. A move in a bullet only illustrates an idea ("the ...d5 break, prepared by ...Nbd7 and ...Qc7").
 
-### 1.7.6.  Step 6 — Update a card
+### 1.7.5.  Step 5 — Update a card
 
 1. **Ideas:** add each new idea as a bullet to the section it belongs in. An idea already in the card is not added again; one that adds a detail to an existing bullet goes in a new bullet next to it. Never rewrite or remove an existing bullet. If a new idea contradicts one in the card, add it with the condition under which it holds, and mention it in the confirmation.
-2. **Key position:** if the analysed position's FEN (first four fields) is not in `positions` or `fen` yet, save its board (Step 5.3), add a block under "Key positions" and append its FEN to `positions`. If it is already there, add only new ideas (item 1).
+2. **Key position:** if the analysed position's FEN (first four fields) is not in `positions` or `fen` yet, save its board (Step 4.3), add a block under "Key positions" and append its FEN to `positions`. If it is already there, add only new ideas (item 1).
 3. **In short:** rewrite it from the card's sections, 3–5 lines. It is the only text that is rewritten, and it never says something that is not in a section.
 4. **Frontmatter:** set `updated` to today. Keep everything else.
 5. **Boards:** run the script again for each board in the card. It writes the same file name for the same position, so this only repairs a missing file and never changes an embed.
 6. **Never touch "My notes"**, and never delete a card, a section or a bullet.
 
-### 1.7.7.  Step 7 — Confirm
+### 1.7.6.  Step 6 — Confirm
 
 Tell the user in one line what happened, with the path, e.g.:
 
@@ -170,33 +161,14 @@ Tell the user in one line what happened, with the path, e.g.:
 
 When the user asks to make a key position its own card ("make this its own card", "this needs its own plan"):
 
-1. Create a branch card (Step 5) with the current card as `parent`, starting from that key position (or from where its plans are set, if the user agrees).
+1. Create a branch card (Step 4) with the current card as `parent`, starting from that key position (or from where its plans are set, if the user agrees).
 2. Copy the ideas that belong to the new line into it. Ideas in the parent stay where they are: never remove a bullet.
-3. In the parent, keep the key position block and add a line to it: `Own card: [[<side folder>/<name>]]`. Keep its FEN in `positions`, so the position still finds the parent first; Step 4 then follows the link: a position that is in a key position with an "Own card" link is updated in that card.
+3. In the parent, keep the key position block and add a line to it: `Own card: [[<side folder>/<name>]]`. Keep its FEN in `positions`, so the position still finds the parent first; Step 3 then follows the link: a position that is in a key position with an "Own card" link is updated in that card.
 4. Add the branch to the parent's "Branches".
 
 ---
 
-## 1.9.  Migrating notes in the old layout
-
-Only after the user's yes (Step 1). The old layout has a hub note per variation (`Openings/<opening> (<ECO>).md`, tag `opening`, a "Positions" list) and position notes in a folder of the same name (tag `opening-position`, frontmatter `opening`, `eco`, `moves`, `fen`, `plans`; sections "Position", "White's plan", "Black's plan", "Engine line", "My notes"). Cards made in the meantime in `Openings/` itself (tag `opening-card`, no side folder) are moved to their side folder.
-
-For each hub with its position notes:
-
-1. **Repertoire side:** ask once per hub, listing all hubs in one question when there are several: *"Do you play these as White, as Black or both?"* "Both" makes a card in each side folder. A hub the user does not want to keep is moved without a card.
-2. **Card:** a top-level card for the hub's opening (Steps 4–5), starting at the end of its main line.
-3. **Positions:** each position note goes through Step 4 as an analysed position: usually a key position. When its plans clearly differ from the card's, propose a branch card and ask, listing all such proposals in one question.
-4. **Ideas:** take the ideas from the plan entries and "Position" sections, rewritten as bullets in the card's sections (Step 6.1): the repertoire side's plan under "My plan", the other side's under "Opponent's plan". Leave out the engine lines and the dates.
-5. **Boards:** reuse the old boards when they are from the repertoire side; otherwise run the script for that side.
-6. **My notes:** copy the user's text from the hub's and the position notes' "My notes" **unchanged** into the "My notes" of the card that received the position, each under a line naming where it came from (`From 6.Be3 e5 7.Nb3:`).
-7. **Move, do not delete:** move the hub note and its folder to `Openings/Old layout/` with a command (`mkdir -p` and `mv`, paths quoted). Boards stay in `Openings/boards/`.
-8. **Overview table:** if `Openings/Openings.base` is an older one (it filters on `opening-position`, or has no "Branch of" column), replace it with [templates/Openings.base](../templates/Openings.base).
-
-Confirm in one line per card, and end with: *"The old notes are in `Openings/Old layout/`; delete that folder once you have checked the cards."*
-
----
-
-## 1.10.  Quality checklist
+## 1.9.  Quality checklist
 
 - [ ] The user said yes (or asked to save) before anything was written, and was told where the card starts and whether it is a new card, a branch or a key position
 - [ ] Only cards in the folder of the repertoire side were searched, by FEN (first four fields) along the analysed line
@@ -208,4 +180,3 @@ Confirm in one line per card, and end with: *"The old notes are in `Openings/Old
 - [ ] Each board is from the repertoire side (`--flip` for Black), stored in `Openings/boards/` under the name the script printed
 - [ ] Existing bullets are unchanged; only "In short" was rewritten
 - [ ] "My notes" is untouched
-- [ ] Old-layout notes were only migrated after the user's yes, and moved, not deleted
