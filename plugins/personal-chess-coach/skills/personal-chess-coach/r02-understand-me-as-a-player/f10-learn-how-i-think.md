@@ -217,6 +217,8 @@ After delivering the thinking summary, offer:
 - "Shall I show your full Thinking Profile across all sessions?" → summarise `thinking_profile` from the profile
 - "Want a training recommendation based on your thinking patterns?" → use coaching implications from §1.8
 
+Then, if a working folder is available, end with one short question about the game record ([F37 §1.6](f37-keep-game-records.md#16--when-to-offer-saving)): **"Add this to the game record?"** if it was saved in this conversation, otherwise **"Save a record of this game?"**. Do not ask if the user already declined a record of this game.
+
 ---
 
 ## 1.8.  Coaching implications

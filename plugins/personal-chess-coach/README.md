@@ -30,11 +30,57 @@ Just talk to Claude:
 
 Analyzing positions, openings and games works in a normal chat in Claude
 Desktop. Getting to know you as a player (your mistakes, style, weaknesses and
-progress) and the opening notebook need **Cowork with a project folder**: that
-is where your player profile and notes are saved. The first time you use one
+progress), the opening notebook and the records of your analyzed games need
+**Cowork with a project folder**: that is where your player profile and notes
+are saved. The first time you use one
 of those features, the coach asks which player profile to use, or offers to
 create one for you. In a normal chat it can still classify the mistakes in a
 game, but nothing is saved.
+
+## Project instructions (Cowork)
+
+In Cowork, give the project these instructions (in the project's settings),
+with your profile's filename filled in:
+
+```markdown
+# Chess coaching
+
+For every chess question (a position, a FEN, a PGN, a move, an opening, a game,
+my mistakes, my progress) use the **personal-chess-coach** skill: read its
+SKILL.md first and follow the feature file it routes to. Do this before you
+answer, also for questions that look simple.
+
+Never work out moves, legality or evaluations yourself. Use the chess-engine
+tools for that. Show boards the way the skill says.
+
+My player profile is `<name>.yaml` in the root of the project folder. Take my
+names, usernames, rating, games folder, library and study plan from its
+`player` section.
+```
+
+Your details go in the `player` section at the top of your player profile, not
+in the instructions. Every field except `name` is optional, and the coach
+offers to fill them in the first time it classifies your mistakes:
+
+```yaml
+player:
+  name: "<name>"
+  aliases: ["<alias 1>", "<alias 2>"]   # your names in PGN files
+  usernames:
+    lichess: "<lichess username>"
+    chess_com: "<chess.com username>"
+  rating: <rating>
+  games_folder: "<games folder>"         # your PGN files
+  library: "<books file>.md"             # your chess books
+  study_plan: "<study plan file>.md"
+```
+
+With these, the coach knows which side you played in a game, picks opening
+statistics for your rating, and finds your games in the folder. Your library
+and study plan are kept in the profile but not used yet.
+
+Do not add instructions about how to show boards: project instructions take
+precedence over the coach, and it would stop showing board images.
 
 ## What it needs
 

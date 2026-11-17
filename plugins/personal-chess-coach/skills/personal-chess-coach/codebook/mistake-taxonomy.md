@@ -2,7 +2,7 @@
 
 Shared reference for classifying chess mistakes by category. Used by F08 and any later feature that reasons about the player's error patterns.
 
-A mistake is any move with `score_loss` ≥ 100 (Mistake or Blunder tier per the [centipawn loss → coaching tier table](coaching-tone.md#11--centipawn-loss--coaching-tier)). Inaccuracies (`score_loss` 30–99) are tracked separately and not classified by category unless a later feature requires it.
+A mistake is any move with `cp_loss` ≥ 100 (Mistake or Blunder tier per the [centipawn loss → coaching tier table](coaching-tone.md#11--centipawn-loss--coaching-tier)). Inaccuracies (`cp_loss` 30–99) are tracked separately and not classified by category unless a later feature requires it.
 
 ---
 

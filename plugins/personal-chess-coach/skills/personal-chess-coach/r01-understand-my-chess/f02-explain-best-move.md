@@ -55,7 +55,7 @@ Call `evaluate_move` for:
 1. The recommended move
 2. Any alternative the user mentioned or that appears in the top candidates
 
-This gives the centipawn difference — useful for gauging whether the distinction is critical (+200 cp) or subtle (+15 cp). Compute `cp_loss` from the returned `score_cp` values and look up the tone tier in the [coaching tone codebook](../codebook/coaching-tone.md#11--centipawn-loss--coaching-tier).
+This gives the centipawn difference — useful for gauging whether the distinction is critical (+200 cp) or subtle (+15 cp). Take the returned `cp_loss` (centipawns, relative to the engine's best move) and look up the tone tier in the [coaching tone codebook](../codebook/coaching-tone.md#11--centipawn-loss--coaching-tier).
 
 ### 1.5.5.  Step 5 — Trace the plan (optional but recommended)
 

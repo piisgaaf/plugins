@@ -6,13 +6,13 @@
 > "Can I get this game with coaching notes I could paste into my database?"
 
 ## 1.2.  Capability unlocked
-The user can submit a full game (PGN movetext, or a pasted move list) and receive readable coaching annotations move by move — the way a coach marks up a scoresheet — instead of an engine dump. Unlike [F05](f05-analyze-my-games.md) (opening + critical moments + one narrative summary) and [F06](f06-critical-moments.md) (only the 2–5 turning points), F07 comments on the game's full move list: routine moves are passed over briefly or grouped, but nothing is skipped silently. The result is available both as a readable annotated move list in the conversation and, on request, as a standard PGN file with the same comments embedded inline (`{...}`) so it can be imported into any chess GUI or database.
+The user can submit a full game (PGN movetext, or a pasted move list) and receive readable coaching annotations move by move — the way a coach marks up a scoresheet — instead of an engine dump. Unlike [F05](f05-analyze-my-games.md) (opening + critical moments + one narrative summary) and [F06](f06-critical-moments.md) (only the 2–5 turning points), F07 comments on the game's full move list: routine moves are passed over briefly or grouped, but nothing is skipped silently. The result is available both as a readable annotated move list in the conversation and, on request, as an annotated PGN file that can be imported into any chess GUI or database ([F38](f38-export-annotated-pgn.md)).
 
 ## 1.3.  Validation
 A correct implementation demonstrates:
 - An experienced player can read the annotations and understand the game without reading engine variations
 - Every move has either a short comment or is explicitly treated as routine/book — nothing is fabricated for narrative effect, and nothing is silently dropped
-- The exported PGN (when requested) is valid PGN that a standard chess GUI can import, with comments attached to the correct moves
+- When the user asks for a PGN, F07 hands over to [F38](f38-export-annotated-pgn.md), which exports exactly these annotations
 - No raw centipawn scores appear anywhere in the chat output
 
 ---
@@ -23,11 +23,11 @@ A correct implementation demonstrates:
 |---|---|
 | `load_pgn` | Always, first — parse the PGN and replay the whole game in one call |
 | `identify_opening` | Once, on the position after the opening phase (roughly move ≤ 15) |
-| `evaluate_move` | Once per ply from roughly move 8 onward — get `score_loss` and `is_best_move` for the move actually played |
+| `evaluate_move` | Once per ply from roughly move 8 onward — get `cp_loss` and `is_best_move` for the move actually played |
 | Show the board as an **SVG image** ([show-board.md](../rendering/show-board.md)); `fen_to_board` only as text fallback or to check a position yourself | On the position before each critical moment only (not every move — see [Step 5](#155--step-5--render-the-chat-view)) |
 | `get_variation` | Optional, for a critical moment where the better idea benefits from showing 2–3 moves of the alternative line |
 
-Same tool set as [F05](f05-analyze-my-games.md#14--mcp-tools-used) and [F06](f06-critical-moments.md#14--mcp-tools-used) — F07 differs in scope (every move gets a tier/comment, not just the critical few) and in offering a second, exportable rendering (annotated PGN), not in engine interaction.
+Same tool set as [F05](f05-analyze-my-games.md#14--mcp-tools-used) and [F06](f06-critical-moments.md#14--mcp-tools-used) — F07 differs in scope (every move gets a tier/comment, not just the critical few) and in offering an exportable annotated PGN through [F38](f38-export-annotated-pgn.md), not in engine interaction.
 
 ---
 
@@ -42,10 +42,10 @@ If `load_pgn` errors, report which move failed and why, and stop — do not anno
 Same as [F05 Step 2](f05-analyze-my-games.md#152--step-2--identify-the-opening). Capture the opening name and ECO code, or state plainly that it wasn't found — never invent one.
 
 ### 1.5.3.  Step 3 — Evaluate every move played
-Same as [F05 Step 3](f05-analyze-my-games.md#153--step-3--evaluate-every-move-played): call `evaluate_move` for each ply from roughly move 8 onward, capturing `score_loss`, `best_move`, and `is_best_move`. Same depth/cost trade-off for long games (60+ plies): reduce depth (still ≥ 14) rather than skipping plies.
+Same as [F05 Step 3](f05-analyze-my-games.md#153--step-3--evaluate-every-move-played): call `evaluate_move` for each ply from roughly move 8 onward, capturing `cp_loss`, `best_move`, and `is_best_move`. Same depth/cost trade-off for long games (60+ plies): reduce depth (still ≥ 14) rather than skipping plies.
 
 ### 1.5.4.  Step 4 — Classify and annotate every move
-For each evaluated ply, map its `score_loss` to a tier using the [centipawn loss → coaching tier table](../codebook/coaching-tone.md#11--centipawn-loss--coaching-tier), then to a classic annotation symbol:
+For each evaluated ply, map its `cp_loss` to a tier using the [centipawn loss → coaching tier table](../codebook/coaching-tone.md#11--centipawn-loss--coaching-tier), then to a classic annotation symbol:
 
 | Tier | Symbol | When to write a comment |
 |---|---|---|
@@ -93,24 +93,7 @@ Do **not** include:
 ### 1.5.6.  Step 6 — Offer the exportable annotated PGN
 After the chat view, offer: "Want this as an annotated PGN you can import into a chess GUI or database?"
 
-If accepted (or if the user asked for this format up front), produce standard PGN text with the same comments embedded inline as PGN comments, attached immediately after the move they refer to:
-
-```
-[Event "..."]
-[White "..."]
-[Black "..."]
-[Result "..."]
-
-1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 ... 18. Nd5 {Slightly better was ... because ...} Qd8
-... 24. Rxf7?? {This drops ... to a ... } Rxf7 ...
-```
-
-Rules for the PGN export:
-- Preserve original headers from `load_pgn`'s `tags` if present; omit tags that weren't supplied rather than inventing them
-- Attach each comment directly after the move it annotates, in `{...}` braces, using the same tier symbol suffixed to the SAN (`Nd5?!`, `Rxf7??`) per standard PGN annotation convention
-- Only annotate moves that received a symbol in Step 4 — routine moves appear in the movetext with no comment, exactly as played
-- Do not alter any move, result, or ordering from what `load_pgn` replayed
-- Present the PGN in a code block so it can be copied directly, or save it as a `.pgn` file and share it via `present_files` if the user wants a file rather than inline text
+If accepted (or if the user asked for this format up front), follow [F38 — Export My Analysis as an Annotated PGN](f38-export-annotated-pgn.md) from its Step 2. It passes the symbols, comments, evaluations and better lines of Steps 3–5 to `export_annotated_pgn`, which writes valid PGN. Never write the PGN by hand.
 
 ### 1.5.7.  Step 7 — Offer next steps
 End with a targeted offer:
@@ -118,16 +101,18 @@ End with a targeted offer:
 - "Shall I compare what was played against the engine's top alternatives there?" → triggers F03
 - "Want just the critical moments, without the full move list?" → triggers F06
 
+Then, if a working folder is available ([SKILL.md §1.7.1](../SKILL.md#171--working-folder-decide-once-per-conversation)), end with one short question: **"Save a record of this game?"** → triggers [F37](../r02-understand-me-as-a-player/f37-keep-game-records.md) (see its §1.6 for when to ask). Ask it once per game, also when the user continues with F02, F03, F08, F09 or F10 first. If the opening was identified, add the opening notebook offer to the same question, e.g. **"Save a record of this game, and add the Najdorf's ideas to your opening notebook?"** → [F36](f36-opening-notebook.md) (its §1.6); do only what the user says yes to.
+
 ---
 
 ## 1.6.  Annotation quality checklist
 
 Before delivering the annotated game, verify:
 
-- [ ] Every move with `score_loss` ≥ 30 (Inaccuracy or worse) has a symbol and a comment, or an explicit, justified grouping (e.g. "moves 9–14 were routine consolidation")
+- [ ] Every move with `cp_loss` ≥ 30 (Inaccuracy or worse) has a symbol and a comment, or an explicit, justified grouping (e.g. "moves 9–14 were routine consolidation")
 - [ ] No comment is manufactured for a routine/book move just to fill space
 - [ ] Board diagrams appear only at Blunder/Mistake tier, not on every move
 - [ ] Every `?`/`??`/`?!`/`!`/`!?` symbol matches the tier table in the codebook
 - [ ] No raw centipawn scores appear anywhere in the chat output
-- [ ] If a PGN export is produced, it is valid movetext with comments correctly attached to their moves, and headers are only included when actually present in the source
+- [ ] A PGN export goes through F38 (`export_annotated_pgn`), never written by hand
 - [ ] If the PGN failed to replay partway through, this is reported clearly rather than annotating an incomplete game

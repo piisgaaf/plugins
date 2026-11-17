@@ -2,13 +2,13 @@
 
 Shared reference tables used across features when turning raw engine numbers into coaching language. Any feature that needs to calibrate explanation tone or classify a move's character should reference this file rather than restating the tables locally.
 
-MCP tools return raw facts only (`score_cp`, `cp_loss`, moves, variations). Classification and tone are coaching decisions and belong here, in the skill — not in the engine tools.
+MCP tools return raw facts only (`score`, `cp_loss`, moves, variations). Classification and tone are coaching decisions and belong here, in the skill — not in the engine tools.
 
 ---
 
 ## 1.1.  Centipawn loss → coaching tier
 
-Given a `cp_loss` value (always ≥ 0, computed by the skill from `score_cp` values returned by `evaluate_move` / `compare_moves`), classify and phrase as follows:
+Given a `cp_loss` value (in centipawns, 100 = one pawn, always ≥ 0, as returned by `evaluate_move`, `evaluate_game` and `compare_moves`), classify and phrase as follows:
 
 | `cp_loss` range | Tier | How to phrase it |
 |---|---|---|

@@ -1,0 +1,47 @@
+filters:
+  and:
+    - file.hasTag("game-record")
+formulas:
+  game: "file.asLink()"
+properties:
+  formula.game:
+    displayName: Game
+  note.date:
+    displayName: Date
+  note.player_color:
+    displayName: Played
+  note.result:
+    displayName: Result
+  note.opening:
+    displayName: Opening
+  note.eco:
+    displayName: ECO
+  note.mistake_categories:
+    displayName: Mistakes
+  note.root_causes:
+    displayName: Root causes
+views:
+  - type: table
+    name: By date
+    order:
+      - formula.game
+      - note.date
+      - note.player_color
+      - note.result
+      - note.opening
+      - note.mistake_categories
+      - note.root_causes
+    sort:
+      - property: note.date
+        direction: DESC
+  - type: table
+    name: By opening
+    groupBy:
+      property: note.opening
+      direction: ASC
+    order:
+      - formula.game
+      - note.date
+      - note.eco
+      - note.player_color
+      - note.result

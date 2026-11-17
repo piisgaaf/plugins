@@ -21,7 +21,7 @@ A correct implementation demonstrates:
 | Tool | When |
 |---|---|
 | `load_pgn` | Always, first — parse the PGN and replay the whole game in one call |
-| `evaluate_move` | Once per ply (from move ~8 onward) — get `score_loss` for the move actually played |
+| `evaluate_move` | Once per ply (from move ~8 onward) — get `cp_loss` for the move actually played |
 | Show the board as an **SVG image** ([show-board.md](../rendering/show-board.md)); `fen_to_board` only as text fallback or to check a position yourself | On the position before each identified critical moment |
 
 This feature reuses the same tools as [F05](f05-analyze-my-games.md#14--mcp-tools-used) — the difference is entirely in scope and presentation, not in engine interaction. No opening identification (`identify_opening`) is needed here; F06 does not narrate the opening.
@@ -38,18 +38,18 @@ If `load_pgn` errors, report which move failed and why, and stop — do not atte
 
 ### 1.5.2.  Step 2 — Evaluate every move played
 
-For each ply from roughly move 8 onward, call `evaluate_move` using that ply's `fen_before` and its `san`. Capture `score_loss` and `is_best_move`.
+For each ply from roughly move 8 onward, call `evaluate_move` using that ply's `fen_before` and its `san`. Capture `cp_loss` and `is_best_move`.
 
 Same cost trade-off as [F05 Step 3](f05-analyze-my-games.md#153--step-3--evaluate-every-move-played): for long games (60+ plies), reduce depth (still ≥ 14) rather than skipping plies — every move must be checked, only precision may be traded off.
 
 ### 1.5.3.  Step 3 — Detect the critical moments
 
 This is the canonical definition of a **critical moment**, shared with F05. A ply is a critical moment if either:
-- It is classified as a Mistake or Blunder by the [centipawn loss → coaching tier table](../codebook/coaching-tone.md#11--centipawn-loss--coaching-tier) (`score_loss` ≥ 100), or
-- The evaluation crosses from one side being better to the other being better (a sign flip in `score_cp` across the move), even if the single-move `score_loss` falls just under the Mistake threshold
+- It is classified as a Mistake or Blunder by the [centipawn loss → coaching tier table](../codebook/coaching-tone.md#11--centipawn-loss--coaching-tier) (`cp_loss` ≥ 100), or
+- The evaluation crosses from one side being better to the other being better (a sign flip in `score` across the move), even if the single-move `cp_loss` falls just under the Mistake threshold
 
 Select the 2–5 most instructive moments for the output:
-- If there are more than 5, prioritize the largest `score_loss` values and any moment where the game's result changed hands
+- If there are more than 5, prioritize the largest `cp_loss` values and any moment where the game's result changed hands
 - If there are none, say so explicitly — a clean, accurate game is a valid and useful result, not a gap to fill with manufactured moments
 
 ### 1.5.4.  Step 4 — Sketch the evaluation shape
@@ -103,7 +103,7 @@ End with a targeted offer:
 
 Before delivering the critical-moments view, verify:
 
-- [ ] Every listed moment has a real `score_loss` or sign-flip supporting it — nothing invented
+- [ ] Every listed moment has a real `cp_loss` or sign-flip supporting it — nothing invented
 - [ ] The evaluation-shape summary is qualitative, never a raw number or numeric list
 - [ ] A clean game with no real swings is reported as such
 - [ ] No raw centipawn scores appear anywhere in the output

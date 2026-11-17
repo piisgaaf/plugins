@@ -1,41 +1,75 @@
 filters:
   and:
-    - file.hasTag("opening-position")
+    - file.hasTag("opening-card")
 formulas:
-  position: "file.asLink()"
+  card: "file.asLink()"
+  key_positions: "if(note.positions, note.positions.length, 0)"
 properties:
-  formula.position:
-    displayName: Position
+  formula.card:
+    displayName: Opening card
+  formula.key_positions:
+    displayName: Key positions
   note.opening:
     displayName: Opening
+  note.family:
+    displayName: Family
   note.eco:
     displayName: ECO
-  note.side_to_move:
-    displayName: To move
-  note.plans:
-    displayName: Plans studied
+  note.repertoire:
+    displayName: Played as
+  note.parent:
+    displayName: Branch of
+  note.moves:
+    displayName: Line
   note.updated:
     displayName: Updated
 views:
   - type: table
-    name: By opening
+    name: My White repertoire
+    filters:
+      and:
+        - note.repertoire == "white"
     groupBy:
-      property: note.opening
+      property: note.family
       direction: ASC
     order:
-      - formula.position
+      - formula.card
       - note.eco
-      - note.side_to_move
-      - note.plans
+      - note.parent
+      - formula.key_positions
       - note.updated
+    sort:
+      - property: note.moves
+        direction: ASC
   - type: table
-    name: By ECO
+    name: My Black repertoire
+    filters:
+      and:
+        - note.repertoire == "black"
     groupBy:
-      property: note.eco
+      property: note.family
       direction: ASC
     order:
-      - formula.position
-      - note.opening
-      - note.side_to_move
-      - note.plans
+      - formula.card
+      - note.eco
+      - note.parent
+      - formula.key_positions
       - note.updated
+    sort:
+      - property: note.moves
+        direction: ASC
+  - type: table
+    name: By family
+    groupBy:
+      property: note.family
+      direction: ASC
+    order:
+      - formula.card
+      - note.repertoire
+      - note.eco
+      - note.parent
+      - formula.key_positions
+      - note.updated
+    sort:
+      - property: note.moves
+        direction: ASC

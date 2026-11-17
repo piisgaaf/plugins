@@ -25,7 +25,7 @@ A correct implementation demonstrates:
 |---|---|
 | Show the board as an **SVG image** ([show-board.md](../rendering/show-board.md)); `fen_to_board` only as text fallback or to check a position yourself | To display the mistake position before explaining it |
 | `get_variation` | To confirm the correct continuation and ground the diagnostic in concrete moves |
-| `evaluate_move` | Optional — to re-confirm `score_loss` if the mistake came from a prior session (not in context) |
+| `evaluate_move` | Optional — to re-confirm `cp_loss` if the mistake came from a prior session (not in context) |
 
 ---
 
@@ -35,7 +35,7 @@ F09 always operates on a mistake already identified by F08. The input to F09 is:
 - The mistake move (SAN, move number, color)
 - The `fen_before` of the mistake position
 - The mistake's F08 category and motif (already classified)
-- The `score_loss` value
+- The `cp_loss` value
 
 F09 can run:
 1. **Immediately after F08** — the user asks "why did I make that mistake?" during the same session. All data is in context.
@@ -180,6 +180,8 @@ After each root-cause explanation, offer:
 - "Want me to explain another mistake from this game?" → repeat from Step 1 for the next mistake
 - "Shall I show your root-cause breakdown across all analyzed games?" → summarise `root_cause_profile` from the profile
 - "Want a training recommendation based on your most frequent root cause?" → use [coaching implications](../codebook/mistake-root-causes.md#14--coaching-implications)
+
+Then, if a working folder is available, end with one short question about the game record ([F37 §1.6](f37-keep-game-records.md#16--when-to-offer-saving)): **"Add this to the game record?"** if it was saved in this conversation, otherwise **"Save a record of this game?"**. Do not ask if the user already declined a record of this game.
 
 ---
 

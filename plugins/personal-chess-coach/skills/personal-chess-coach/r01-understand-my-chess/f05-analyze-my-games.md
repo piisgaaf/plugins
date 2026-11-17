@@ -23,7 +23,7 @@ A correct implementation demonstrates:
 | `load_pgn` | Always, first — parse the PGN and replay the whole game in one call |
 | Show the board as an **SVG image** ([show-board.md](../rendering/show-board.md)); `fen_to_board` only as text fallback or to check a position yourself | On the starting position, and on each critical-moment position, to ground the narrative |
 | `identify_opening` | Once, on the position after the opening phase (roughly move ≤ 15), to get the opening name and ECO code |
-| `evaluate_move` | Once per ply — get `score_loss` for the move actually played, relative to the engine's best move in that position |
+| `evaluate_move` | Once per ply — get `cp_loss` for the move actually played, relative to the engine's best move in that position |
 
 `load_pgn` does the PGN-specific work (header parsing, movetext cleanup, replaying every move against a live board) in a single call, returning header tags, the starting FEN, and every ply with its SAN move and the FEN before/after it was played. Everything downstream of that — opening identification, per-move evaluation, critical-moment detection, and the coaching write-up — reuses the same single-position tools as F01–F04, just applied per ply.
 
@@ -56,7 +56,7 @@ If not found, state that plainly and describe the opening in general terms from 
 
 ### 1.5.3.  Step 3 — Evaluate every move played
 
-For each ply returned by `load_pgn`, call `evaluate_move` using that ply's `fen_before` and its `san`. Capture `score_loss` and `is_best_move` for each ply.
+For each ply returned by `load_pgn`, call `evaluate_move` using that ply's `fen_before` and its `san`. Capture `cp_loss` and `is_best_move` for each ply.
 
 This is the most expensive step — for long games, evaluating every single ply at full depth may be unnecessary. Prioritize:
 - Always evaluate moves from roughly move 8 onward (skip pure book theory already covered by Step 2, unless the user asks for the opening moves too)
@@ -64,7 +64,7 @@ This is the most expensive step — for long games, evaluating every single ply 
 
 ### 1.5.4.  Step 4 — Find the critical moments
 
-Use [F06 — Show Me the Critical Moments](f06-critical-moments.md) to detect and select the critical moments from the `score_loss` values gathered in Step 3: F06's [detection rule](f06-critical-moments.md#153--step-3--detect-the-critical-moments) (Mistake/Blunder tier, or an evaluation sign flip) and selection guidance (2–5 most instructive, prioritizing largest `score_loss` and hand-changing moments) are the single source of truth — do not restate or fork the thresholds here.
+Use [F06 — Show Me the Critical Moments](f06-critical-moments.md) to detect and select the critical moments from the `cp_loss` values gathered in Step 3: F06's [detection rule](f06-critical-moments.md#153--step-3--detect-the-critical-moments) (Mistake/Blunder tier, or an evaluation sign flip) and selection guidance (2–5 most instructive, prioritizing largest `cp_loss` and hand-changing moments) are the single source of truth — do not restate or fork the thresholds here.
 
 If there are none (a clean, accurate game), say so explicitly — this is itself useful coaching signal, not a gap to paper over.
 
@@ -110,6 +110,8 @@ End with a targeted offer:
 - "Shall I compare what was played against the engine's top alternatives at that point?" → triggers F03
 - "Want to look at the opening in more detail?" → triggers F04
 
+Then, if a working folder is available ([SKILL.md §1.7.1](../SKILL.md#171--working-folder-decide-once-per-conversation)) and the opening was identified, end with one short question: **"Add the [opening] ideas to your opening notebook?"**, from the side the user played → triggers [F36](f36-opening-notebook.md) (see its §1.6 for when to ask).
+
 ---
 
 ## 1.6.  Analysis quality checklist
@@ -117,7 +119,7 @@ End with a targeted offer:
 Before delivering the analysis, verify:
 
 - [ ] The opening name and ECO code are correct, or their absence is stated plainly (never guessed)
-- [ ] Every selected critical moment has a real `score_loss` supporting it — nothing is invented for narrative effect
+- [ ] Every selected critical moment has a real `cp_loss` supporting it — nothing is invented for narrative effect
 - [ ] Each critical moment names a concrete idea (motif for tactical, structural concept for positional) — not just "this was a mistake"
 - [ ] The game summary tells a coherent story, not a list of disconnected facts
 - [ ] No raw centipawn scores appear anywhere in the output text

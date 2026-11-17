@@ -2,7 +2,7 @@
 
 Shared reference for diagnosing *why* a mistake was made. Used by F09 and any later feature that builds on root-cause analysis.
 
-A root cause is assigned to each classified mistake (i.e. any move with `score_loss` ≥ 100). Root causes are orthogonal to categories: a tactical mistake can stem from a candidate-generation failure or a calculation error; a positional mistake can stem from a planning error or an assumption bias.
+A root cause is assigned to each classified mistake (i.e. any move with `cp_loss` ≥ 100). Root causes are orthogonal to categories: a tactical mistake can stem from a candidate-generation failure or a calculation error; a positional mistake can stem from a planning error or an assumption bias.
 
 ---
 

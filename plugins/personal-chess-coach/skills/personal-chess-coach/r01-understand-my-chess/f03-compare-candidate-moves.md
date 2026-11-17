@@ -52,8 +52,8 @@ Show the board as an **SVG image** for the position being compared from — see 
 ### 1.5.4.  Step 4 — Evaluate every candidate at equal depth
 
 Call `evaluate_move` for each candidate, using the **same depth** for all of them so the comparison is fair. Record for each candidate:
-- `score_cp`
-- `cp_loss` computed relative to the best move in the set
+- `score` (pawns, White's perspective)
+- `cp_loss` (centipawns, relative to the engine's best move). The gap between two candidates is the difference of their `cp_loss` values; the best candidate in the set is the one with the lowest `cp_loss`
 
 Rank candidates by `cp_loss` and look up the tone tier for each gap in the [coaching tone codebook](../codebook/coaching-tone.md#11--centipawn-loss--coaching-tier) — the same tiers used by F02.
 

@@ -12,7 +12,7 @@ Unlike traditional chess software that answers **"What is the best move?"**, thi
 - What plan does it support?
 - Why is my candidate move weaker?
 
-The **Player Profile** is the central domain model of the features that get to know the player (F08–F13). Analyzing positions, openings and games (F01–F07, F35) needs no profile and works in a normal Claude Desktop chat as well as in Cowork: see §1.7.
+The **Player Profile** is the central domain model of the features that get to know the player (F08–F13). Analyzing positions, openings and games (F01–F07, F35, F38) needs no profile and works in a normal Claude Desktop chat as well as in Cowork: see §1.7. In Cowork, an analyzed game can be saved as a game record (F37), independent of the profile.
 
 ---
 
@@ -31,6 +31,7 @@ The **Player Profile** is the central domain model of the features that get to k
 | F07 — Annotate My Game Like a Coach | [f07-annotate-game.md](r01-understand-my-chess/f07-annotate-game.md) | Active |
 | F35 — See My Opponent's Threats | [f35-see-opponents-threats.md](r01-understand-my-chess/f35-see-opponents-threats.md) | Active |
 | F36 — Build My Opening Notebook | [f36-opening-notebook.md](r01-understand-my-chess/f36-opening-notebook.md) | Active |
+| F38 — Export My Analysis as an Annotated PGN | [f38-export-annotated-pgn.md](r01-understand-my-chess/f38-export-annotated-pgn.md) | Active |
 
 ### Release 0.2 — Understand Me as a Player
 
@@ -42,6 +43,7 @@ The **Player Profile** is the central domain model of the features that get to k
 | F11 — Learn My Playing Style | [f11-learn-my-playing-style.md](r02-understand-me-as-a-player/f11-learn-my-playing-style.md) | Active |
 | F12 — Show My Recurring Weaknesses | [f12-recurring-weaknesses.md](r02-understand-me-as-a-player/f12-recurring-weaknesses.md) | Active |
 | F13 — Show How I'm Improving | [f13-show-improvement.md](r02-understand-me-as-a-player/f13-show-improvement.md) | Active |
+| F37 — Keep a Record of Every Analyzed Game | [f37-keep-game-records.md](r02-understand-me-as-a-player/f37-keep-game-records.md) | Active |
 
 ---
 
@@ -81,7 +83,8 @@ Always use the chess_engine tools for technical chess work.
 | Tool | Purpose |
 |---|---|
 | `load_pgn` | Parse a PGN (headers + movetext, or bare move list) and replay it, returning header tags, the starting FEN, and every ply with its SAN move and FEN before/after — use when you need just the move list without engine evaluation |
-| `evaluate_game` | Parse a PGN **and** evaluate every ply with the engine server-side, returning a complete scored ply list with `score_loss`, `best_move`, and `is_best_move` per ply — **must be called as a task-augmented `tools/call`** (MCP 2025-11-25); see below |
+| `evaluate_game` | Parse a PGN **and** evaluate every ply with the engine server-side, returning a complete scored ply list with `cp_loss`, `best_move`, and `is_best_move` per ply — **must be called as a task-augmented `tools/call`** (MCP 2025-11-25); see below |
+| `export_annotated_pgn` | Write an annotated game (move symbols, comments, evaluations, variations) as PGN that Lichess, Scid or Chess.com can import. No engine analysis: it replays the game and every variation so all moves are legal. Used by F38 only; never write an annotated PGN by hand |
 
 **`evaluate_game` is the preferred entry point for F05, F06, F07, and F08** when engine evaluation is needed. It eliminates the FEN transcription failure mode by piping FENs directly from the board replayer into the engine without any LLM transcription step.
 
@@ -152,7 +155,7 @@ For each game in the PGN, show a one-sentence summary with:
 - **Index** (Game 1, Game 2, …)
 - **Date** — from the `[Date]` tag, or "date unknown"
 - **Event** — from the `[Event]` tag, or "no event"
-- **Color** — the side the player (identified by their aliases in the project instructions) played; if there are no aliases, or neither player matches one, list both sides
+- **Color** — the side the player played. Recognise the player by the names in the profile's `player` section (`name`, `aliases`, `usernames`; see §1.7.5), ignoring case, or else by aliases in the project instructions. If there are no names, or neither player matches one, list both sides
 - **Time control** — derive from the `[TimeControl]` tag: ≤ 600 s per side = Blitz, 601–2999 s = Rapid, ≥ 3000 s = Classical; if tag is absent or unparseable, omit the field
 - **Already analyzed?** — only when a profile is in use (§1.7.2): check its `analyzed_games` list and mark the game ✓ if present. Without a profile, leave this field out; do not resolve a profile just for this list
 
@@ -178,7 +181,7 @@ When the user provides a position or game, determine which feature applies:
 4. **User asks about an opening by name, or asks for typical plans/continuations rather than asking to evaluate a specific move** → [f04-understand-opening-positions.md](r01-understand-my-chess/f04-understand-opening-positions.md). A question about one side's plan in a *specific position* (a FEN) is not an opening question: route it to F01, and if that side is not to move, apply §1.5.1
 5. **User provides a full game as a PGN or move list and asks for a full analysis (opening, critical moments, summary)** → [f05-analyze-my-games.md](r01-understand-my-chess/f05-analyze-my-games.md)
 6. **User provides a full game as a PGN or move list and asks specifically where the game turned / for the critical moments, without asking for a full write-up** → [f06-critical-moments.md](r01-understand-my-chess/f06-critical-moments.md)
-7. **User provides a full game as a PGN or move list and asks for move-by-move coaching annotations (or an annotated PGN they can import elsewhere), rather than a narrative summary or just the turning points** → [f07-annotate-game.md](r01-understand-my-chess/f07-annotate-game.md)
+7. **User provides a full game as a PGN or move list and asks for move-by-move coaching annotations, rather than a narrative summary or just the turning points** → [f07-annotate-game.md](r01-understand-my-chess/f07-annotate-game.md)
 8. **User asks what kind of mistakes they make, what went wrong, or to classify their errors — with or without a preceding F05 analysis** → [f08-classify-my-mistakes.md](r02-understand-me-as-a-player/f08-classify-my-mistakes.md)
 9. **User asks why they made a specific mistake, what their thinking error was, or requests deeper explanation of a mistake already classified by F08** → [f09-explain-mistake-root-cause.md](r02-understand-me-as-a-player/f09-explain-mistake-root-cause.md)
 10. **User asks about their thinking habits / calculation style / decision-making, or coach offers to ask reflective questions after a completed game analysis** → [f10-learn-how-i-think.md](r02-understand-me-as-a-player/f10-learn-how-i-think.md)
@@ -186,12 +189,14 @@ When the user provides a position or game, determine which feature applies:
 12. **User asks what their recurring weaknesses are, what they keep getting wrong, or which mistake patterns come up most often** → [f12-recurring-weaknesses.md](r02-understand-me-as-a-player/f12-recurring-weaknesses.md)
 13. **User asks whether they are improving, how their mistakes have changed over time, or asks to see their progress** → [f13-show-improvement.md](r02-understand-me-as-a-player/f13-show-improvement.md)
 14. **User asks what their opponent is threatening, what happens if they do nothing, or what they might be missing in a position** → [f35-see-opponents-threats.md](r01-understand-my-chess/f35-see-opponents-threats.md)
-15. **User says "save this" / "save to my notebook", or answers yes to "Save to your notebook?"** → [f36-opening-notebook.md](r01-understand-my-chess/f36-opening-notebook.md)
-16. **Unclear** → validate the FEN first, then ask what the user wants to know.
+15. **User says "add this to my opening notebook" / "save this opening", names an opening to add to the notebook, asks to start a card from a position or to make a key position its own card, or answers yes to "Add this to your opening notebook?"** → [f36-opening-notebook.md](r01-understand-my-chess/f36-opening-notebook.md)
+16. **User asks for the annotated game as a PGN file (to import into Lichess, Scid, Chess.com or a chess GUI), or answers yes to F07's PGN offer** → [f38-export-annotated-pgn.md](r01-understand-my-chess/f38-export-annotated-pgn.md). It needs an F07 analysis of the game; without one, it runs F07 first
+17. **User says "save this game" / "keep a record of this game", or answers yes to "Save a record of this game?" or "Add this to the game record?"** → [f37-keep-game-records.md](r02-understand-me-as-a-player/f37-keep-game-records.md). It needs an F07 analysis of the game; without one, it runs F07 first
+18. **Unclear** → validate the FEN first, then ask what the user wants to know.
 
 Always validate any FEN with `validate_fen` before analysis.
 
-Routes 8–13 (F08–F13) use the Player Profile and route 15 (F36) writes notes: both need a working folder. Before following them, apply §1.7.1 and §1.7.3.
+Routes 8–13 (F08–F13) use the Player Profile and routes 15 (F36) and 17 (F37) write notes: all need a working folder. Before following them, apply §1.7.1 and §1.7.3.
 
 ### 1.5.1.  Plan for a side that is not to move
 
@@ -214,7 +219,7 @@ Whenever a feature file says "show the board", follow [rendering/show-board.md](
 
 The Player Profile is the central domain model of F08–F13. It accumulates structured knowledge about the player across sessions.
 
-**Location:** `<name>.yaml` in the root of the **working folder**: the folder the user has mounted (the Cowork project folder, which may be an Obsidian vault or a subfolder of it). The opening notebook ([F36](r01-understand-my-chess/f36-opening-notebook.md)) lives in the same folder. This is a plain YAML file on the user's computer — no database or external service required.
+**Location:** `<name>.yaml` in the root of the **working folder**: the folder the user has mounted (the Cowork project folder, which may be an Obsidian vault or a subfolder of it). The opening notebook ([F36](r01-understand-my-chess/f36-opening-notebook.md), in `Openings/`) and the game records ([F37](r02-understand-me-as-a-player/f37-keep-game-records.md), in `Game_Analysis/`) live in the same folder. This is a plain YAML file on the user's computer — no database or external service required.
 
 ### 1.7.1.  Working folder: decide once per conversation
 
@@ -225,7 +230,9 @@ Decide from your own tools, before the first feature that needs it, and keep the
 
 ### 1.7.2.  When to resolve the profile
 
-Resolve and read the profile only when the conversation routes to one of F08–F13. Never at the start of a session, and never for F01–F07, F35 or F36: those features do not use it.
+Resolve and read the full profile only when the conversation routes to one of F08–F13. Never at the start of a session, and never for F01–F07, F35, F36, F37 or F38: those features do not use it. Game records (F37) hold only what was found about one game and never copy anything from the profile. A profile is only ever built from game records when the user explicitly asks for it.
+
+**Player details only:** any feature may read just the `player` section (§1.7.5) when it needs the player's names, rating or games folder: the game list (§1.4.1), the rating band (F04 Step 5), or the user referring to one of their games without pasting it. Do this only with a working folder and only when the profile file is known without asking: named in the project instructions, or the only `*.yaml` file in the working folder's root. Never ask which profile to use just for this; if it is not known, continue without the details. Read the section at most once per conversation.
 
 **Resolving which profile to use** (only with a working folder):
 1. If the project instructions (e.g. a system prompt or Cowork configuration) specify a profile filename, use that file.
@@ -235,15 +242,17 @@ Resolve and read the profile only when the conversation routes to one of F08–F
 
 | Feature | What to do |
 |---|---|
-| F01–F07, F35 | Work as usual: they never use the profile |
+| F01–F07, F35, F38 | Work as usual: they never use the profile. F38 hands over its PGN as a file or code block, never into the folder |
 | F04 | Use the default rating band (F04 Step 5) |
+| Player details (§1.7.5) | Not available. Use aliases from the project instructions, if any (§1.4.1) |
 | F08 — Classify My Mistakes | Classify the mistakes of this game as usual; skip the profile steps (F08 Steps 1, 2 and 6: reading, deduplication, update) |
 | F09 — Root cause | Only for mistakes classified earlier in this conversation; skip the profile update |
 | F10 — How I think | Ask the reflective questions and interpret the answers as usual; skip reading and updating the profile, and do not refer to patterns from earlier sessions |
 | F11, F12, F13 | Do not run: they read only accumulated profile data. Say so in one line (see below) and offer to analyze or classify a game instead |
-| F36 — Notebook | Do not offer "Save to your notebook?". If the user asks to save, say so in one line (see below) |
+| F36 — Notebook | Do not offer "Add this to your opening notebook?" (also not in F07's combined question). If the user asks to save, say so in one line (see below) |
+| F37 — Game records | Do not offer "Save a record of this game?". If the user asks to save, say so in one line (see below) |
 
-Say once per conversation, in one short line, why nothing is saved, e.g.: *"(Not saved: your player profile and opening notebook need Cowork with a project folder.)"* Do not repeat it after every answer.
+Say once per conversation, in one short line, why nothing is saved, e.g.: *"(Not saved: your player profile, opening notebook and game records need Cowork with a project folder.)"* Do not repeat it after every answer.
 
 ### 1.7.4.  Rules for reading and writing
 
@@ -251,7 +260,33 @@ Say once per conversation, in one short line, why nothing is saved, e.g.: *"(Not
 
 **Write rule:** Profile updates are additive only. Counters are incremented, examples are appended (capped at 3 per category), derived fields (`share`, `severity`, `recurring_weaknesses`) are recomputed. Nothing is deleted.
 
-**Schema:** The profile schema is defined and extended by the feature files. The minimal v0.1 schema (including `mistake_categories` and `analyzed_games`) is introduced in [F08](r02-understand-me-as-a-player/f08-classify-my-mistakes.md#153--profile-skeleton-first-run-only). F08 also maintains a `monthly_stats` section (keyed by `"YYYY-MM"`) used by F13 — see [F08 §1.5.4](r02-understand-me-as-a-player/f08-classify-my-mistakes.md#154--monthly_stats-schema). F09 extends the schema with a `root_cause_profile` section — see [F09 §1.6](r02-understand-me-as-a-player/f09-explain-mistake-root-cause.md#16--player-profile). F10 extends the schema with a `thinking_profile` section — see [F10 §1.6](r02-understand-me-as-a-player/f10-learn-how-i-think.md#16--player-profile). F11 extends the schema with `playing_style`, `strengths`, and `preferred_openings` sections — see [F11 §1.6](r02-understand-me-as-a-player/f11-learn-my-playing-style.md#16--player-profile).
+**Schema:** The `player` section is described in §1.7.5. The rest of the profile schema is defined and extended by the feature files. The minimal v0.1 schema (including `mistake_categories` and `analyzed_games`) is introduced in [F08](r02-understand-me-as-a-player/f08-classify-my-mistakes.md#153--profile-skeleton-first-run-only). F08 also maintains a `monthly_stats` section (keyed by `"YYYY-MM"`) used by F13 — see [F08 §1.5.4](r02-understand-me-as-a-player/f08-classify-my-mistakes.md#154--monthly_stats-schema). F09 extends the schema with a `root_cause_profile` section — see [F09 §1.6](r02-understand-me-as-a-player/f09-explain-mistake-root-cause.md#16--player-profile). F10 extends the schema with a `thinking_profile` section — see [F10 §1.6](r02-understand-me-as-a-player/f10-learn-how-i-think.md#16--player-profile). F11 extends the schema with `playing_style`, `strengths`, and `preferred_openings` sections — see [F11 §1.6](r02-understand-me-as-a-player/f11-learn-my-playing-style.md#16--player-profile).
+
+### 1.7.5.  Player details
+
+The `player` section holds who the player is. The user fills it in; the project instructions only name the profile file (template: [templates/project-instructions.md](templates/project-instructions.md)). Every field except `name` is optional.
+
+```yaml
+player:
+  name: "<name>"
+  aliases: ["<alias 1>", "<alias 2>"]   # names in PGN headers, matched ignoring case
+  usernames:
+    lichess: "<lichess username>"
+    chess_com: "<chess.com username>"
+  rating: <rating>                       # rating band for F04 Step 5
+  games_folder: "<games folder>"         # the player's PGN files, often with several games each
+  library: "<books file>.md"             # stored for later use
+  study_plan: "<study plan file>.md"     # stored for later use
+```
+
+| Field | Used by |
+|---|---|
+| `name`, `aliases`, `usernames` | The game list (§1.4.1) and every feature that must know which side the player played |
+| `rating` | F04 Step 5 |
+| `games_folder` | Finding a game the user refers to ("my last game", a date or an opponent) without pasting it. Multi-game files follow §1.4 |
+| `library`, `study_plan` | Not used yet: keep them, never remove them |
+
+A profile without some of these fields is valid: leave the missing details out and work as without them. F08 Step 1 offers once to fill them in.
 
 ---
 

@@ -30,7 +30,7 @@ F08 reuses the same tools as F05 when the evaluation pipeline must be run:
 | Show the board as an **SVG image** ([show-board.md](../rendering/show-board.md)); `fen_to_board` only as text fallback or to check a position yourself | For each mistake position shown to the user |
 | `get_variation` | Optional — to confirm the better move's idea for a critical mistake |
 
-**If F05 was already run in this session**, skip directly to Step 3 — the `score_loss` data per ply is already in context.
+**If F05 was already run in this session**, skip directly to Step 3 — the `cp_loss` data per ply is already in context.
 
 ---
 
@@ -55,8 +55,16 @@ At the start of every F08 run, read the profile file. If it does not exist, crea
 # Created: <ISO date of first F08 run>
 # Last updated: <ISO date>
 
-player:
+player:                     # player details, see SKILL.md §1.7.5
   name: ""                  # fill in from game headers or ask the user
+  aliases: []
+  usernames:
+    lichess: ""
+    chess_com: ""
+  rating: null
+  games_folder: ""
+  library: ""
+  study_plan: ""
 
 mistake_summary:
   games_analyzed: 0
@@ -230,7 +238,7 @@ After classification (Step 5), update the profile:
 - Increment each category's `count`
 - Recompute each category's `share` = `count / total_mistakes` (0.00 if total_mistakes is 0)
 - Recompute each category's `severity` using the [severity table](../codebook/mistake-taxonomy.md#12--severity)
-- Append up to one new example per category from this game (most instructive mistake per category, by highest `score_loss`). Each example must include a `game` field referencing the human-readable ID of the game it came from. Keep a maximum of 3 examples per category — drop the oldest when a fourth arrives.
+- Append up to one new example per category from this game (most instructive mistake per category, by highest `cp_loss`). Each example must include a `game` field referencing the human-readable ID of the game it came from. Keep a maximum of 3 examples per category — drop the oldest when a fourth arrives.
 - Recompute `recurring_weaknesses`: list all categories with `severity` = high or medium, ordered by `share` descending.
 - Update `monthly_stats`: derive the month key from the game date (see §1.5.4). Increment `games` by 1. For blitz games, increment `blitz_games` and leave `mistakes`/`shares` as `~`. For classical/rapid games, increment `classical_games` (if the bucket is mixed), increment each category's mistake count, increment `total`, and recompute `shares` (`category_count / total`, 0.00 if total is 0). Set `time_control: blitz` only when every game in the bucket is blitz.
 
@@ -262,6 +270,8 @@ Read the resolved profile file. Hold the current values in context throughout th
 If the file does not exist yet (new player), create it with the skeleton from section 1.5.3 and proceed.
 
 If the `player.name` field is empty and it cannot be inferred from PGN headers, ask the user for their name before proceeding.
+
+If the `player` section lacks any of the other fields from [SKILL.md §1.7.5](../SKILL.md#175--player-details) (an older or new profile), ask once, in one question, whether the user wants to add them: names used in PGN files, Lichess and Chess.com usernames, rating, games folder, books file, study plan file. All are optional. Write what they give and add the rest as empty values (as in the skeleton), so the question is not asked again. Never change values that are already filled in.
 
 ### 1.6.2.  Step 2 — Deduplicate
 
@@ -301,24 +311,24 @@ Append an entry to `analyzed_games` with `time_control: blitz` and `use_for: [im
 
 ### 1.6.3.  Step 3 — Run the evaluation pipeline (if not already done)
 
-**If F05 has already run in this session**, the ply list and per-ply `score_loss` values are already in context. Skip to Step 4.
+**If F05 has already run in this session**, the ply list and per-ply `cp_loss` values are already in context. Skip to Step 4.
 
 **Otherwise**, run the F05 evaluation pipeline:
 1. Call `load_pgn` with the raw game text. Capture `tags`, `starting_fen`, `plies`, `final_fen`.
-2. For each ply from roughly move 8 onward, call `evaluate_move` using that ply's `fen_before` and `san`. Capture `score_loss`, `best_move`, and `is_best_move`.
+2. For each ply from roughly move 8 onward, call `evaluate_move` using that ply's `fen_before` and `san`. Capture `cp_loss`, `best_move`, and `is_best_move`.
 3. Deliver the F05 game analysis output to the user (opening, critical moments, game summary) — see [F05](../r01-understand-my-chess/f05-analyze-my-games.md) for the full output format.
 
 The F05 output is always delivered before the F08 classification — the user sees the game narrative first, then the mistake pattern summary.
 
 ### 1.6.4.  Step 4 — Identify mistakes and inaccuracies
 
-From the per-ply `score_loss` values:
-- **Mistakes and blunders**: `score_loss` ≥ 100 — these are classified by category
-- **Inaccuracies**: `score_loss` 30–99 — counted in total but not classified by category
+From the per-ply `cp_loss` values:
+- **Mistakes and blunders**: `cp_loss` ≥ 100 — these are classified by category
+- **Inaccuracies**: `cp_loss` 30–99 — counted in total but not classified by category
 
 ### 1.6.5.  Step 5 — Classify each mistake
 
-For each mistake (`score_loss` ≥ 100), assign a category using the [mistake taxonomy](../codebook/mistake-taxonomy.md). For each classified mistake, also assign a motif label from the [motif vocabulary](../codebook/mistake-taxonomy.md#13--motif-vocabulary).
+For each mistake (`cp_loss` ≥ 100), assign a category using the [mistake taxonomy](../codebook/mistake-taxonomy.md). For each classified mistake, also assign a motif label from the [motif vocabulary](../codebook/mistake-taxonomy.md#13--motif-vocabulary).
 
 Show the board as an **SVG image** ([show-board.md](../rendering/show-board.md)) for the `fen_before` of each mistake position shown to the user, and use `fen_to_board` to ground the classification in the concrete position. Optionally call `get_variation` if the better move's idea is not immediately clear from chess knowledge.
 
@@ -352,7 +362,7 @@ and what kind of study would address the dominant weakness. Ground this in the
 specific mistakes from this game — not generic advice.]
 ```
 
-Do not surface raw `score_loss` values or centipawn numbers. Reference specific moves from the game by move number and piece/square when illustrating a pattern.
+Do not surface raw `cp_loss` values or centipawn numbers. Reference specific moves from the game by move number and piece/square when illustrating a pattern.
 
 ### 1.6.8.  Step 8 — Offer next steps
 
@@ -360,6 +370,8 @@ End with a targeted offer based on the dominant weakness category:
 - Tactical weakness → "Want me to explain why you missed the tactic on move [N]?" → triggers F02
 - Positional weakness → "Shall I go deeper on the positional decision at move [N]?" → triggers F02
 - Opening weakness → "Want to understand what the opening called for instead?" → triggers F04
+
+Then, if a working folder is available, end with one short question about the game record ([F37 §1.6](f37-keep-game-records.md#16--when-to-offer-saving)): **"Add this to the game record?"** if it was saved in this conversation, otherwise **"Save a record of this game?"**. Do not ask if the user already declined a record of this game.
 
 ---
 
@@ -371,7 +383,7 @@ Before delivering output, verify (without a working folder, skip the items about
 - [ ] PGN hash was computed and checked against `analyzed_games` before any engine calls
 - [ ] `[TimeControl]` tag was read and game was classified as blitz / rapid / classical; blitz games were registered but not sent to the engine
 - [ ] Blitz games have `time_control: blitz` and `use_for: [improvement_trends, opening_repertoire]` in their `analyzed_games` entry; classical games omit both fields
-- [ ] Every classified mistake has a `score_loss` ≥ 100 supporting it — nothing invented
+- [ ] Every classified mistake has a `cp_loss` ≥ 100 supporting it — nothing invented
 - [ ] Each mistake has exactly one category and one motif label
 - [ ] Each example in the profile includes a `game` field with the human-readable game ID
 - [ ] Phase priority was respected in classification (Opening/Endgame take precedence)
