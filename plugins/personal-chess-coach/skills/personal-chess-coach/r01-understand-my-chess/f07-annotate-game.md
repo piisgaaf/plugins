@@ -101,7 +101,7 @@ End with a targeted offer:
 - "Shall I compare what was played against the engine's top alternatives there?" → triggers F03
 - "Want just the critical moments, without the full move list?" → triggers F06
 
-Then, if a working folder is available ([SKILL.md §1.7.1](../SKILL.md#171--working-folder-decide-once-per-conversation)), end with one short question: **"Save a record of this game?"** → triggers [F37](../r02-understand-me-as-a-player/f37-keep-game-records.md) (see its §1.6 for when to ask). Ask it once per game, also when the user continues with F02, F03, F08, F09 or F10 first. If the opening was identified, add the opening notebook offer to the same question, e.g. **"Save a record of this game, and add the Najdorf's ideas to your opening notebook?"** → [F36](f36-opening-notebook.md) (its §1.6); do only what the user says yes to.
+Then, if a working folder is available ([SKILL.md §1.7.1](../SKILL.md#171--working-folder-decide-once-per-conversation)), end with one short question: **"Save a record of this game?"** → triggers [F37](../r02-understand-me-as-a-player/f37-keep-game-records.md) (see its §1.6 for when to ask). Ask it once per game, also when the user continues with F02, F03, F08, F09 or F10 first. If the opening was identified, add the opening notebook offer to the same question, e.g. **"Save a record of this game, and add the Najdorf's ideas to your opening notebook?"** → [F36](../r03-prepare-and-understand-openings/f36-opening-notebook.md) (its §1.6); do only what the user says yes to.
 
 ---
 

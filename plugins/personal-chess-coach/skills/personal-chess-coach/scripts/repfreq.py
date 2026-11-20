@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """repfreq.py — split a PGN repertoire into major / minor / rare by practical frequency.
 
-Used by F39 (r01-understand-my-chess/f39-prioritise-repertoire.md).
+Used by F39 (r03-prepare-and-understand-openings/f39-prioritise-repertoire.md).
 
 Frequencies come ONLY from the chess engine tool get_opening_continuations; this
 script never goes online. Work files (tree.json, results.json, chapters.json) live

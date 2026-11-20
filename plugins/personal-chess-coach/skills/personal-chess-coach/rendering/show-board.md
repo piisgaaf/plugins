@@ -57,7 +57,7 @@ If the user explicitly asks for an SVG while SVG is unavailable, say it can't be
 
 ## 1.5.  Saving a board with a note
 
-When a feature writes a note (e.g. [F36](../r01-understand-my-chess/f36-opening-notebook.md) or [F37](../r02-understand-me-as-a-player/f37-keep-game-records.md)), its boards are saved as files in the feature's board folder (for F36: `Openings/boards/`; for F37: `Game_Analysis/boards/`) and embedded in the note. This is in addition to showing the board in the chat per §1.2.
+When a feature writes a note (e.g. [F36](../r03-prepare-and-understand-openings/f36-opening-notebook.md) or [F37](../r02-understand-me-as-a-player/f37-keep-game-records.md)), its boards are saved as files in the feature's board folder (for F36: `Openings/boards/`; for F37: `Game_Analysis/boards/`) and embedded in the note. This is in addition to showing the board in the chat per §1.2.
 
 - **SVG available:** run the script as in §1.3, but with `-d <board folder>` instead of `-o`, using the working folder's path as you access it. Add `--flip` for Black's side. The script names the file after the position (`<hash>.svg`, or `<hash>-black.svg` with `--flip`), creates the folder if needed, and **prints the file name**. Embed exactly that name in the note: `![[<printed name>|400]]`. Never make up or change a board file name.
 - **SVG unavailable or failed:** put the `fen_to_board` text board in the note, in a code block, instead of the embed.

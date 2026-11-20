@@ -110,7 +110,7 @@ End with a targeted offer:
 - "Shall I compare what was played against the engine's top alternatives at that point?" → triggers F03
 - "Want to look at the opening in more detail?" → triggers F04
 
-Then, if a working folder is available ([SKILL.md §1.7.1](../SKILL.md#171--working-folder-decide-once-per-conversation)) and the opening was identified, end with one short question: **"Add the [opening] ideas to your opening notebook?"**, from the side the user played → triggers [F36](f36-opening-notebook.md) (see its §1.6 for when to ask).
+Then, if a working folder is available ([SKILL.md §1.7.1](../SKILL.md#171--working-folder-decide-once-per-conversation)) and the opening was identified, end with one short question: **"Add the [opening] ideas to your opening notebook?"**, from the side the user played → triggers [F36](../r03-prepare-and-understand-openings/f36-opening-notebook.md) (see its §1.6 for when to ask).
 
 ---
 

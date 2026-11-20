@@ -12,7 +12,7 @@ Unlike traditional chess software that answers **"What is the best move?"**, thi
 - What plan does it support?
 - Why is my candidate move weaker?
 
-The **Player Profile** is the central domain model of the features that get to know the player (F08–F13). Analyzing positions, openings and games (F01–F07, F35, F38) needs no profile and works in a normal Claude Desktop chat as well as in Cowork: see §1.7. In Cowork, an analyzed game can be saved as a game record (F37), independent of the profile, and a repertoire can be split into major, minor and rare lines (F39).
+The **Player Profile** is the central domain model of the features that get to know the player (F08–F13). Analyzing positions and games (F01–F03, F05–F07, F35, F38) and understanding openings (F04) need no profile and work in a normal Claude Desktop chat as well as in Cowork: see §1.7. In Cowork, an analyzed game can be saved as a game record (F37), independent of the profile, openings can be kept as idea cards in an opening notebook (F36), and a repertoire can be split into major, minor and rare lines (F39).
 
 ---
 
@@ -25,14 +25,11 @@ The **Player Profile** is the central domain model of the features that get to k
 | F01 — Analyze a Chess Position | [f01-analyze-position.md](r01-understand-my-chess/f01-analyze-position.md) | Active |
 | F02 — Explain the Best Move | [f02-explain-best-move.md](r01-understand-my-chess/f02-explain-best-move.md) | Active |
 | F03 — Compare Candidate Moves | [f03-compare-candidate-moves.md](r01-understand-my-chess/f03-compare-candidate-moves.md) | Active |
-| F04 — Understand Opening Positions | [f04-understand-opening-positions.md](r01-understand-my-chess/f04-understand-opening-positions.md) | Active |
 | F05 — Analyze My Games | [f05-analyze-my-games.md](r01-understand-my-chess/f05-analyze-my-games.md) | Active |
 | F06 — Show Me the Critical Moments | [f06-critical-moments.md](r01-understand-my-chess/f06-critical-moments.md) | Active |
 | F07 — Annotate My Game Like a Coach | [f07-annotate-game.md](r01-understand-my-chess/f07-annotate-game.md) | Active |
 | F35 — See My Opponent's Threats | [f35-see-opponents-threats.md](r01-understand-my-chess/f35-see-opponents-threats.md) | Active |
-| F36 — Build My Opening Notebook | [f36-opening-notebook.md](r01-understand-my-chess/f36-opening-notebook.md) | Active |
 | F38 — Export My Analysis as an Annotated PGN | [f38-export-annotated-pgn.md](r01-understand-my-chess/f38-export-annotated-pgn.md) | Active |
-| F39 — Prioritise My Repertoire | [f39-prioritise-repertoire.md](r01-understand-my-chess/f39-prioritise-repertoire.md) | Active |
 
 ### Release 0.2 — Understand Me as a Player
 
@@ -45,6 +42,14 @@ The **Player Profile** is the central domain model of the features that get to k
 | F12 — Show My Recurring Weaknesses | [f12-recurring-weaknesses.md](r02-understand-me-as-a-player/f12-recurring-weaknesses.md) | Active |
 | F13 — Show How I'm Improving | [f13-show-improvement.md](r02-understand-me-as-a-player/f13-show-improvement.md) | Active |
 | F37 — Keep a Record of Every Analyzed Game | [f37-keep-game-records.md](r02-understand-me-as-a-player/f37-keep-game-records.md) | Active |
+
+### Release 0.3 — Prepare and Understand Openings
+
+| Feature | Detail file | Status |
+|---|---|---|
+| F04 — Understand Opening Positions | [f04-understand-opening-positions.md](r03-prepare-and-understand-openings/f04-understand-opening-positions.md) | Active |
+| F36 — Build My Opening Notebook | [f36-opening-notebook.md](r03-prepare-and-understand-openings/f36-opening-notebook.md) | Active |
+| F39 — Prioritise My Repertoire | [f39-prioritise-repertoire.md](r03-prepare-and-understand-openings/f39-prioritise-repertoire.md) | Active |
 
 ---
 
@@ -77,7 +82,7 @@ Always use the chess_engine tools for technical chess work.
 | Tool                          | Purpose                                                        |
 | ----------------------------- | -------------------------------------------------------------- |
 | `identify_opening`            | Identify opening name and ECO code from a FEN or move sequence |
-| `get_opening_continuations`   | Get frequency-ranked continuations for a position at a given rating band (external data source; may be unavailable — see [F04](r01-understand-my-chess/f04-understand-opening-positions.md#155--step-5--get-typical-continuations-conditional-on-step-4-succeeding)) |
+| `get_opening_continuations`   | Get frequency-ranked continuations for a position at a given rating band (external data source; may be unavailable — see [F04](r03-prepare-and-understand-openings/f04-understand-opening-positions.md#155--step-5--get-typical-continuations-conditional-on-step-4-succeeding)) |
 
 ### 1.2.4.  Game tools
 
@@ -179,7 +184,7 @@ When the user provides a position or game, determine which feature applies:
 1. **Bare position / FEN / board diagram / board picture** → [f01-analyze-position.md](r01-understand-my-chess/f01-analyze-position.md). For a board picture or a board diagram, first follow [input/board-image.md](input/board-image.md) to obtain a checked FEN (§1.2.7)
 2. **"Why is X the best move?" or "Explain this move"** → [f02-explain-best-move.md](r01-understand-my-chess/f02-explain-best-move.md)
 3. **User gives 2+ moves and asks which is better / to compare them** → [f03-compare-candidate-moves.md](r01-understand-my-chess/f03-compare-candidate-moves.md)
-4. **User asks about an opening by name, or asks for typical plans/continuations rather than asking to evaluate a specific move** → [f04-understand-opening-positions.md](r01-understand-my-chess/f04-understand-opening-positions.md). A question about one side's plan in a *specific position* (a FEN) is not an opening question: route it to F01, and if that side is not to move, apply §1.5.1
+4. **User asks about an opening by name, or asks for typical plans/continuations rather than asking to evaluate a specific move** → [f04-understand-opening-positions.md](r03-prepare-and-understand-openings/f04-understand-opening-positions.md). A question about one side's plan in a *specific position* (a FEN) is not an opening question: route it to F01, and if that side is not to move, apply §1.5.1
 5. **User provides a full game as a PGN or move list and asks for a full analysis (opening, critical moments, summary)** → [f05-analyze-my-games.md](r01-understand-my-chess/f05-analyze-my-games.md)
 6. **User provides a full game as a PGN or move list and asks specifically where the game turned / for the critical moments, without asking for a full write-up** → [f06-critical-moments.md](r01-understand-my-chess/f06-critical-moments.md)
 7. **User provides a full game as a PGN or move list and asks for move-by-move coaching annotations, rather than a narrative summary or just the turning points** → [f07-annotate-game.md](r01-understand-my-chess/f07-annotate-game.md)
@@ -190,10 +195,10 @@ When the user provides a position or game, determine which feature applies:
 12. **User asks what their recurring weaknesses are, what they keep getting wrong, or which mistake patterns come up most often** → [f12-recurring-weaknesses.md](r02-understand-me-as-a-player/f12-recurring-weaknesses.md)
 13. **User asks whether they are improving, how their mistakes have changed over time, or asks to see their progress** → [f13-show-improvement.md](r02-understand-me-as-a-player/f13-show-improvement.md)
 14. **User asks what their opponent is threatening, what happens if they do nothing, or what they might be missing in a position** → [f35-see-opponents-threats.md](r01-understand-my-chess/f35-see-opponents-threats.md)
-15. **User says "add this to my opening notebook" / "save this opening", names an opening to add to the notebook, asks to start a card from a position or to make a key position its own card, or answers yes to "Add this to your opening notebook?"** → [f36-opening-notebook.md](r01-understand-my-chess/f36-opening-notebook.md)
+15. **User says "add this to my opening notebook" / "save this opening", names an opening to add to the notebook, asks to start a card from a position or to make a key position its own card, or answers yes to "Add this to your opening notebook?"** → [f36-opening-notebook.md](r03-prepare-and-understand-openings/f36-opening-notebook.md)
 16. **User asks for the annotated game as a PGN file (to import into Lichess, Scid, Chess.com or a chess GUI), or answers yes to F07's PGN offer** → [f38-export-annotated-pgn.md](r01-understand-my-chess/f38-export-annotated-pgn.md). It needs an F07 analysis of the game; without one, it runs F07 first
 17. **User says "save this game" / "keep a record of this game", or answers yes to "Save a record of this game?" or "Add this to the game record?"** → [f37-keep-game-records.md](r02-understand-me-as-a-player/f37-keep-game-records.md). It needs an F07 analysis of the game; without one, it runs F07 first
-18. **User asks to split or prioritise their opening repertoire (PGN files), which lines are major/minor/rare, what to prepare first, where the holes in their repertoire are, whether to split a chapter, or to update their repertoire overview** → [f39-prioritise-repertoire.md](r01-understand-my-chess/f39-prioritise-repertoire.md). A question about one opening's plans is F04, not this
+18. **User asks to split or prioritise their opening repertoire (PGN files), which lines are major/minor/rare, what to prepare first, where the holes in their repertoire are, whether to split a chapter, or to update their repertoire overview** → [f39-prioritise-repertoire.md](r03-prepare-and-understand-openings/f39-prioritise-repertoire.md). A question about one opening's plans is F04, not this
 19. **Unclear** → validate the FEN first, then ask what the user wants to know.
 
 Always validate any FEN with `validate_fen` before analysis.
@@ -221,7 +226,7 @@ Whenever a feature file says "show the board", follow [rendering/show-board.md](
 
 The Player Profile is the central domain model of F08–F13. It accumulates structured knowledge about the player across sessions.
 
-**Location:** `<name>.yaml` in the root of the **working folder**: the folder the user has mounted (the Cowork project folder, which may be an Obsidian vault or a subfolder of it). The opening notebook ([F36](r01-understand-my-chess/f36-opening-notebook.md), in `Openings/`), the game records ([F37](r02-understand-me-as-a-player/f37-keep-game-records.md), in `Game_Analysis/`) and the repertoire overview ([F39](r01-understand-my-chess/f39-prioritise-repertoire.md), in `Repertoire/`) live in the same folder. This is a plain YAML file on the user's computer — no database or external service required.
+**Location:** `<name>.yaml` in the root of the **working folder**: the folder the user has mounted (the Cowork project folder, which may be an Obsidian vault or a subfolder of it). The opening notebook ([F36](r03-prepare-and-understand-openings/f36-opening-notebook.md), in `Openings/`), the game records ([F37](r02-understand-me-as-a-player/f37-keep-game-records.md), in `Game_Analysis/`) and the repertoire overview ([F39](r03-prepare-and-understand-openings/f39-prioritise-repertoire.md), in `Repertoire/`) live in the same folder. This is a plain YAML file on the user's computer — no database or external service required.
 
 ### 1.7.1.  Working folder: decide once per conversation
 
