@@ -1,6 +1,6 @@
 ---
 name: personal-chess-coach
-description: Personal chess coach that helps players improve through position analysis, move explanation, game diagnosis, and long-term coaching. Use this skill whenever the user wants to analyze a chess position or FEN, understand why a move is best, compare candidate moves, understand an opening, analyze a full game or PGN, identify what an opponent is threatening, or receive coaching explanations about chess. Triggers include "analyze this position", "what is the best move", "explain this move", "why did the engine recommend", "compare these moves", "analyze my game", "analyze this PGN", "what is my opponent threatening", "what happens if I do nothing here", or any chess position expressed as a FEN string or PGN.
+description: Personal chess coach that helps players improve through position analysis, move explanation, game diagnosis, and long-term coaching. Use this skill whenever the user wants to analyze a chess position or FEN, understand why a move is best, compare candidate moves, understand an opening, analyze a full game or PGN, identify what an opponent is threatening, prioritise an opening repertoire by how often its lines occur, or receive coaching explanations about chess. Triggers include "analyze this position", "what is the best move", "explain this move", "why did the engine recommend", "compare these moves", "analyze my game", "analyze this PGN", "what is my opponent threatening", "what happens if I do nothing here", "split my repertoire into major and minor lines", "which lines should I prepare first", "where are the holes in my repertoire", or any chess position expressed as a FEN string or PGN.
 ---
 
 # 1.  Personal Chess Coach
@@ -12,7 +12,7 @@ Unlike traditional chess software that answers **"What is the best move?"**, thi
 - What plan does it support?
 - Why is my candidate move weaker?
 
-The **Player Profile** is the central domain model of the features that get to know the player (F08–F13). Analyzing positions, openings and games (F01–F07, F35, F38) needs no profile and works in a normal Claude Desktop chat as well as in Cowork: see §1.7. In Cowork, an analyzed game can be saved as a game record (F37), independent of the profile.
+The **Player Profile** is the central domain model of the features that get to know the player (F08–F13). Analyzing positions, openings and games (F01–F07, F35, F38) needs no profile and works in a normal Claude Desktop chat as well as in Cowork: see §1.7. In Cowork, an analyzed game can be saved as a game record (F37), independent of the profile, and a repertoire can be split into major, minor and rare lines (F39).
 
 ---
 
@@ -32,6 +32,7 @@ The **Player Profile** is the central domain model of the features that get to k
 | F35 — See My Opponent's Threats | [f35-see-opponents-threats.md](r01-understand-my-chess/f35-see-opponents-threats.md) | Active |
 | F36 — Build My Opening Notebook | [f36-opening-notebook.md](r01-understand-my-chess/f36-opening-notebook.md) | Active |
 | F38 — Export My Analysis as an Annotated PGN | [f38-export-annotated-pgn.md](r01-understand-my-chess/f38-export-annotated-pgn.md) | Active |
+| F39 — Prioritise My Repertoire | [f39-prioritise-repertoire.md](r01-understand-my-chess/f39-prioritise-repertoire.md) | Active |
 
 ### Release 0.2 — Understand Me as a Player
 
@@ -192,11 +193,12 @@ When the user provides a position or game, determine which feature applies:
 15. **User says "add this to my opening notebook" / "save this opening", names an opening to add to the notebook, asks to start a card from a position or to make a key position its own card, or answers yes to "Add this to your opening notebook?"** → [f36-opening-notebook.md](r01-understand-my-chess/f36-opening-notebook.md)
 16. **User asks for the annotated game as a PGN file (to import into Lichess, Scid, Chess.com or a chess GUI), or answers yes to F07's PGN offer** → [f38-export-annotated-pgn.md](r01-understand-my-chess/f38-export-annotated-pgn.md). It needs an F07 analysis of the game; without one, it runs F07 first
 17. **User says "save this game" / "keep a record of this game", or answers yes to "Save a record of this game?" or "Add this to the game record?"** → [f37-keep-game-records.md](r02-understand-me-as-a-player/f37-keep-game-records.md). It needs an F07 analysis of the game; without one, it runs F07 first
-18. **Unclear** → validate the FEN first, then ask what the user wants to know.
+18. **User asks to split or prioritise their opening repertoire (PGN files), which lines are major/minor/rare, what to prepare first, where the holes in their repertoire are, whether to split a chapter, or to update their repertoire overview** → [f39-prioritise-repertoire.md](r01-understand-my-chess/f39-prioritise-repertoire.md). A question about one opening's plans is F04, not this
+19. **Unclear** → validate the FEN first, then ask what the user wants to know.
 
 Always validate any FEN with `validate_fen` before analysis.
 
-Routes 8–13 (F08–F13) use the Player Profile and routes 15 (F36) and 17 (F37) write notes: all need a working folder. Before following them, apply §1.7.1 and §1.7.3.
+Routes 8–13 (F08–F13) use the Player Profile and routes 15 (F36), 17 (F37) and 18 (F39) write notes: all need a working folder. Before following them, apply §1.7.1 and §1.7.3.
 
 ### 1.5.1.  Plan for a side that is not to move
 
@@ -219,7 +221,7 @@ Whenever a feature file says "show the board", follow [rendering/show-board.md](
 
 The Player Profile is the central domain model of F08–F13. It accumulates structured knowledge about the player across sessions.
 
-**Location:** `<name>.yaml` in the root of the **working folder**: the folder the user has mounted (the Cowork project folder, which may be an Obsidian vault or a subfolder of it). The opening notebook ([F36](r01-understand-my-chess/f36-opening-notebook.md), in `Openings/`) and the game records ([F37](r02-understand-me-as-a-player/f37-keep-game-records.md), in `Game_Analysis/`) live in the same folder. This is a plain YAML file on the user's computer — no database or external service required.
+**Location:** `<name>.yaml` in the root of the **working folder**: the folder the user has mounted (the Cowork project folder, which may be an Obsidian vault or a subfolder of it). The opening notebook ([F36](r01-understand-my-chess/f36-opening-notebook.md), in `Openings/`), the game records ([F37](r02-understand-me-as-a-player/f37-keep-game-records.md), in `Game_Analysis/`) and the repertoire overview ([F39](r01-understand-my-chess/f39-prioritise-repertoire.md), in `Repertoire/`) live in the same folder. This is a plain YAML file on the user's computer — no database or external service required.
 
 ### 1.7.1.  Working folder: decide once per conversation
 
@@ -230,9 +232,9 @@ Decide from your own tools, before the first feature that needs it, and keep the
 
 ### 1.7.2.  When to resolve the profile
 
-Resolve and read the full profile only when the conversation routes to one of F08–F13. Never at the start of a session, and never for F01–F07, F35, F36, F37 or F38: those features do not use it. Game records (F37) hold only what was found about one game and never copy anything from the profile. A profile is only ever built from game records when the user explicitly asks for it.
+Resolve and read the full profile only when the conversation routes to one of F08–F13. Never at the start of a session, and never for F01–F07, F35, F36, F37, F38 or F39: those features do not use it. Game records (F37) hold only what was found about one game and never copy anything from the profile. A profile is only ever built from game records when the user explicitly asks for it.
 
-**Player details only:** any feature may read just the `player` section (§1.7.5) when it needs the player's names, rating or games folder: the game list (§1.4.1), the rating band (F04 Step 5), or the user referring to one of their games without pasting it. Do this only with a working folder and only when the profile file is known without asking: named in the project instructions, or the only `*.yaml` file in the working folder's root. Never ask which profile to use just for this; if it is not known, continue without the details. Read the section at most once per conversation.
+**Player details only:** any feature may read just the `player` section (§1.7.5) when it needs the player's names, rating or games folder: the game list (§1.4.1), the rating band (F04 Step 5, F39 Step 1), the repertoire files (F39), or the user referring to one of their games without pasting it. Do this only with a working folder and only when the profile file is known without asking: named in the project instructions, or the only `*.yaml` file in the working folder's root. Never ask which profile to use just for this; if it is not known, continue without the details. Read the section at most once per conversation.
 
 **Resolving which profile to use** (only with a working folder):
 1. If the project instructions (e.g. a system prompt or Cowork configuration) specify a profile filename, use that file.
@@ -251,8 +253,9 @@ Resolve and read the full profile only when the conversation routes to one of F0
 | F11, F12, F13 | Do not run: they read only accumulated profile data. Say so in one line (see below) and offer to analyze or classify a game instead |
 | F36 — Notebook | Do not offer "Add this to your opening notebook?" (also not in F07's combined question). If the user asks to save, say so in one line (see below) |
 | F37 — Game records | Do not offer "Save a record of this game?". If the user asks to save, say so in one line (see below) |
+| F39 — Repertoire | Do not run: it reads the repertoire PGNs from the folder and writes its overview there. Say so in one line (see below) |
 
-Say once per conversation, in one short line, why nothing is saved, e.g.: *"(Not saved: your player profile, opening notebook and game records need Cowork with a project folder.)"* Do not repeat it after every answer.
+Say once per conversation, in one short line, why nothing is saved, e.g.: *"(Not saved: your player profile, opening notebook, game records and repertoire overview need Cowork with a project folder.)"* Do not repeat it after every answer.
 
 ### 1.7.4.  Rules for reading and writing
 
@@ -275,6 +278,11 @@ player:
     chess_com: "<chess.com username>"
   rating: <rating>                       # rating band for F04 Step 5
   games_folder: "<games folder>"         # the player's PGN files, often with several games each
+  repertoire:                            # F39; every field optional
+    white: ["<repertoire/White/repertoire_white.pgn>"]   # PGN files per side, relative to the working folder
+    black: ["<repertoire/Black/repertoire_black.pgn>"]
+    ratings: [1800, 2000]                # Lichess buckets; default: the two around `rating`
+    speeds: ["rapid", "classical"]       # default
   library: "<books file>.md"             # stored for later use
   study_plan: "<study plan file>.md"     # stored for later use
 ```
@@ -282,8 +290,9 @@ player:
 | Field | Used by |
 |---|---|
 | `name`, `aliases`, `usernames` | The game list (§1.4.1) and every feature that must know which side the player played |
-| `rating` | F04 Step 5 |
+| `rating` | F04 Step 5, F39 Step 1 |
 | `games_folder` | Finding a game the user refers to ("my last game", a date or an opponent) without pasting it. Multi-game files follow §1.4 |
+| `repertoire` | F39: the repertoire PGNs per side and the rating band to look them up at |
 | `library`, `study_plan` | Not used yet: keep them, never remove them |
 
 A profile without some of these fields is valid: leave the missing details out and work as without them. F08 Step 1 offers once to fill them in.
