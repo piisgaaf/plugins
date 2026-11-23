@@ -13,14 +13,23 @@ Keep it in a temporary directory, never in the user's working folder.
   repfreq.py [--work DIR] add "<moves>" "san:pct ..." [...] store looked-up replies
   repfreq.py [--work DIR] report <outdir> [--band TEXT]     write the 3 markdown files
 
+Used by F29 (r03-prepare-and-understand-openings/f29-learn-my-repertoire.md), after the
+frontier loop above:
+
+  repfreq.py [--work DIR] lines                             lines to evaluate (lines.json)
+  repfreq.py [--work DIR] evals <n> "san:cp:best:score ..." [gap]   store evaluate_game's result
+  repfreq.py [--work DIR] games <record.md> [...]           match game records (games.json)
+  repfreq.py [--work DIR] review <outdir> [--band TEXT]     write repertoire_<side>_review.md
+
 report writes <outdir>/repertoire_<white|black>_{major,minor,rare}.md. Text below
-the line "<!-- coach notes -->" in an existing file is kept on a rerun.
+the line "<!-- coach notes -->" in an existing file is kept on a rerun; the same holds for review.
 
 Exit codes: 0 ok, 1 bad input (illegal SAN, missing tree), 3 python-chess not installed.
 """
 import io
 import json
 import os
+import re
 import sys
 
 try:
@@ -36,6 +45,11 @@ SPLIT_MIN_PLIES = 40             # side variations worth a split: at least this 
 SPLIT_MIN_SHARE = 0.5            # ... and at least this share of the chapter
 NOTES_MARKER = "<!-- coach notes -->"
 DEFAULT_BAND = "1800–2000, rapid and classical"
+DUBIOUS_CP, CHECK_CP = 100, 50  # F29: own moves losing this much (centipawns)
+END_WORSE = -0.5                # F29: line ends with the player this much worse (pawns)
+END_GAP = 1.0                   # F29: line ends where the best move is this far ahead of the next
+MISTAKE_WINDOW = 16             # F29: plies after leaving the repertoire that count as "soon after"
+TOP_ITEMS = 15                  # F29: rows in "Prepare next"
 
 
 def load(name, default=None):
@@ -172,13 +186,8 @@ def size(node):
     return 1 + sum(size(c) for c in node.variations)
 
 
-def cmd_report(outdir, band):
-    side, tree, results, reach, path = compute_reach()
-    files = load("tree.json")["files"]
-    label = "White" if side == "w" else "Black"
-    opp_turn = chess.BLACK if side == "w" else chess.WHITE
-
-    # holes: frequent replies without an answer that do not transpose straight back
+def find_holes(tree, results, reach, path):
+    """Frequent replies (reach >= MINOR) without an answer that do not transpose straight back."""
     holes = []
     for key, opts in results.items():
         for san, pct in opts:
@@ -193,8 +202,12 @@ def cmd_report(outdir, band):
                 continue
             holes.append((x, path[key] + [san]))
     holes.sort(reverse=True)
+    return holes
 
-    # chapters: class by own line; side variations off the main line
+
+def find_chapters(files, side, tree, reach, path):
+    """Each chapter's class (by its own line) and its side variations off the main line."""
+    opp_turn = chess.BLACK if side == "w" else chess.WHITE
     chapters = []
     for f in files:
         for source, g in read_games(f):
@@ -219,10 +232,19 @@ def cmd_report(outdir, band):
             lower_plies = sum(s["plies"] for s in lower)
             split = lower_plies >= SPLIT_MIN_PLIES and lower_plies >= SPLIT_MIN_SHARE * plies
             better = [s for s in sides if s["reach"] > s["main"] and s["reach"] >= MINOR]
-            chapters.append({"event": g.headers.get("Event", "?"), "file": os.path.basename(f),
+            chapters.append({"event": g.headers.get("Event", "?"), "file": os.path.basename(f), "source": source,
                              "entry": path.get(entry), "reach": x, "class": cls(x) if x is not None else "rare",
                              "plies": plies, "main": len(list(g.mainline_moves())), "side_plies": side_plies,
                              "sides": sides, "split": split, "better": better})
+    return chapters
+
+
+def cmd_report(outdir, band):
+    side, tree, results, reach, path = compute_reach()
+    files = load("tree.json")["files"]
+    label = "White" if side == "w" else "Black"
+    holes = find_holes(tree, results, reach, path)
+    chapters = find_chapters(files, side, tree, reach, path)
 
     def note(c):
         n = []
@@ -301,6 +323,297 @@ you reach the start of its **own line**: the first position that only this chapt
     json.dump(chapters, open("chapters.json", "w"), indent=1, default=str)
 
 
+# ---------------------------------------------------------------- F29: soundness
+def cmd_lines():
+    """The fewest lines that cover every own move in a position reached in >= MINOR."""
+    side, tree, results, reach, path = compute_reach()
+    todo = [k for k, v in tree.items() if v["turn"] != side and v["moves"]
+            and k not in results and reach.get(k, 0) >= MINOR]
+    if todo:
+        sys.exit(f"{len(todo)} positions still to look up: finish the frontier loop first")
+    edges = [(k, san) for k, v in tree.items() if v["turn"] == side and reach.get(k, 0) >= MINOR
+             for san in v["moves"]]
+    edges.sort(key=lambda e: -len(path[e[0]]))          # deepest first: long lines cover their trunk
+    covered, lines = set(), []
+    for key, san in edges:
+        if (key, san) in covered:
+            continue
+        line, node, seen = path[key] + [san], tree[key]["moves"][san], {key}
+        while node in tree and tree[node]["moves"] and node not in seen:
+            seen.add(node)
+            v = tree[node]
+            if v["turn"] == side:
+                nxt = next((m for m in v["moves"] if (node, m) not in covered), next(iter(v["moves"])))
+            else:
+                best = max(v["moves"], key=lambda m: reach.get(v["moves"][m], 0))
+                if reach.get(v["moves"][best], 0) < MINOR:
+                    break
+                nxt = best
+            line.append(nxt)
+            node = v["moves"][nxt]
+        b = chess.Board()
+        for m in line:
+            if (b.turn == chess.WHITE) == (side == "w"):
+                covered.add((b.epd(), m))
+            b.push_san(m)
+        lines.append(line)
+    json.dump(lines, open("lines.json", "w"), indent=1)
+    print(f"own moves to check {len(edges)}, lines {len(lines)}, plies {sum(map(len, lines))}")
+    for i, line in enumerate(lines, 1):
+        print(f'{i:3d}  "{movetext(line)}"')
+
+
+def cmd_evals(args):
+    """Store evaluate_game's result for one line: san:cp_loss:best_move:score per ply."""
+    if len(args) not in (2, 3):
+        sys.exit('evals takes <n> "<san:cp_loss:best:score ...>" [<gap>]')
+    lines = load("lines.json")
+    try:
+        n = int(args[0])
+        line = lines[n - 1]
+        if n < 1:
+            raise IndexError
+    except (ValueError, IndexError):
+        sys.exit(f"no line {args[0]}: lines run from 1 to {len(lines)}")
+    tokens = args[1].split()
+    if len(tokens) != len(line):
+        sys.exit(f"line {n} has {len(line)} plies, got {len(tokens)}: pass every ply, from move 1")
+    b, plies = chess.Board(), []
+    for want, tok in zip(line, tokens):
+        try:
+            san, cp, best, score = tok.rsplit(":", 3)
+            if b.san(b.parse_san(san)) != want:
+                raise ValueError(f"expected {want}, got {san}")
+            best = b.san(b.parse_san(best)) if best not in ("", "-") else None
+            plies.append({"san": want, "cp_loss": int(cp) if cp not in ("", "-") else None, "best": best,
+                          "score": float(score) if score not in ("", "-") else None})
+        except ValueError as e:
+            sys.exit(f"line {n}, ply {len(plies) + 1} ({tok}): {e}")
+        b.push_san(want)
+    evals = load("evals.json", {})
+    evals[str(n)] = {"plies": plies, "gap": float(args[2]) if len(args) == 3 else None}
+    json.dump(evals, open("evals.json", "w"), indent=1)
+    print(f"stored line {n}, evaluated {len(evals)} of {len(lines)}")
+
+
+# ---------------------------------------------------------------- F29: game records
+MISTAKE_RE = re.compile(r"^###\s*(\d+)\s*(\.\.\.|…|\.)\s*(\S+)")
+
+
+def parse_record(path):
+    text = open(path, encoding="utf-8").read()
+    front = text.split("---", 2)[1] if text.startswith("---") else ""
+    field = lambda k: (re.search(rf"^{k}:\s*\"?([^\"\n]*)\"?\s*$", front, re.M) or [None, ""])[1].strip()
+    pgn = re.search(r"```pgn\s*\n(.*?)```", text, re.S)
+    mistakes, in_section = [], False
+    for line in text.splitlines():
+        if line.startswith("## "):
+            in_section = line.strip() == "## Mistakes"
+        elif in_section and (m := MISTAKE_RE.match(line)):
+            mistakes.append({"ply": (int(m[1]) - 1) * 2 + (2 if m[2] != "." else 1),
+                             "move": f"{m[1]}{m[2]}{m[3]}"})
+    return {"name": os.path.splitext(os.path.basename(path))[0], "date": field("date"),
+            "color": field("player_color"), "result": field("result"),
+            "pgn": pgn[1] if pgn else None, "mistakes": mistakes}
+
+
+def cmd_games(paths):
+    """Match game records (F37) against the tree: where each game left the repertoire."""
+    t = load("tree.json")
+    side, tree = t["side"], t["tree"]
+    color = "white" if side == "w" else "black"
+    games, skipped = [], {"other side": 0, "side unknown": 0, "no PGN": 0, "other start": 0}
+    for p in paths:
+        r = parse_record(p)
+        if r["color"] not in ("white", "black"):
+            skipped["side unknown"] += 1; continue
+        if r["color"] != color:
+            skipped["other side"] += 1; continue
+        g = chess.pgn.read_game(io.StringIO(r["pgn"] or ""))
+        if g is None or not r["pgn"]:
+            skipped["no PGN"] += 1; continue
+        b = g.board()
+        if b.epd() not in tree:
+            skipped["other start"] += 1; continue
+        sans, edges, left = [], [], None
+        for ply, move in enumerate(g.mainline_moves(), 1):
+            key, san = b.epd(), b.san(move)
+            node = tree[key]
+            if node["turn"] == side:
+                edges.append([key, san])
+            b.push(move)
+            if b.epd() in tree:                       # in the repertoire, transpositions included
+                sans.append(san); continue
+            kind = "end" if not node["moves"] else "you" if node["turn"] == side else "opponent"
+            left = {"ply": ply, "path": sans, "san": san, "epd": key, "kind": kind,
+                    "expected": list(node["moves"]), "sources": node["sources"]}
+            edges = edges[:-1] if kind == "you" else edges
+            break
+        res = {"1-0": 1.0, "0-1": 0.0, "1/2-1/2": 0.5}.get(r["result"])
+        score = None if res is None else res if side == "w" else 1 - res
+        after = left["ply"] if left else 10 ** 6
+        soon = [m for m in r["mistakes"] if after < m["ply"] <= after + MISTAKE_WINDOW]
+        games.append({"name": r["name"], "date": r["date"], "result": r["result"], "score": score,
+                      "left": left, "edges": edges, "soon": soon})
+    json.dump(games, open("games.json", "w"), indent=1)
+    print(f"games with this side {len(games)}; skipped " + ", ".join(f"{k} {v}" for k, v in skipped.items()))
+
+
+# ---------------------------------------------------------------- F29: review
+def cmd_review(outdir, band):
+    side, tree, results, reach, path = compute_reach()
+    files = load("tree.json")["files"]
+    label = "White" if side == "w" else "Black"
+    sign = 1 if side == "w" else -1
+    holes = find_holes(tree, results, reach, path)
+    chapters = find_chapters(files, side, tree, reach, path)
+    event = {c["source"]: c["event"] for c in chapters}
+    lines = load("lines.json", [])
+    evals = load("evals.json", {})
+    games = load("games.json", [])
+    pct = lambda x: f"{x:.1f}%" if x >= 0.05 else "< 1%"
+
+    # soundness: own moves (one entry per position + move) and line ends
+    moves, ends = {}, []
+    for i, line in enumerate(lines, 1):
+        ev = evals.get(str(i))
+        if not ev:
+            continue
+        b = chess.Board()
+        for j, (san, e) in enumerate(zip(line, ev["plies"])):
+            key = b.epd()
+            if (b.turn == chess.WHITE) == (side == "w") and e["cp_loss"] is not None and reach.get(key, 0) >= MINOR:
+                if e["cp_loss"] >= CHECK_CP and (key, san) not in moves:
+                    note = ""
+                    if e["best"]:
+                        nb = b.copy(); nb.push_san(e["best"])
+                        if nb.epd() in tree:
+                            note = "transposes into " + " / ".join(sorted({event.get(s, s) for s in tree[nb.epd()]["sources"]}))
+                    moves[(key, san)] = {"path": line[:j], "san": san, "reach": reach[key], "cp": e["cp_loss"],
+                                         "best": e["best"], "note": note}
+            b.push_san(san)
+        last = ev["plies"][-1]["score"]
+        why = []
+        if last is not None and sign * last <= END_WORSE:
+            why.append(f"you are worse at the end ({sign * last:+.1f})")
+        if ev["gap"] is not None and ev["gap"] >= END_GAP:
+            why.append(f"only one move holds ({ev['gap']:.1f} pawns ahead of the next)")
+        if why:
+            ends.append({"line": line, "reach": reach.get(b.epd(), 0.0), "score": last, "why": why})
+    missing = [i for i in range(1, len(lines) + 1) if str(i) not in evals]
+
+    # priorities: base (reach of the position, at least 1% when games show it) x weight x (1 + games)
+    items = []
+    for m in moves.values():
+        b = chess.Board()
+        for x in m["path"]:
+            b.push_san(x)
+        n = sum(1 for g in games if [b.epd(), m["san"]] in g["edges"])
+        w = 2 if m["cp"] >= DUBIOUS_CP else 1
+        items.append((m["reach"] * w * (1 + n), "Dubious move" if w == 2 else "Move to check",
+                      m["path"] + [m["san"]], m["reach"], n, f"loses {m['cp']} cp; engine prefers {m['best']}"))
+    seen_holes = set()
+    for x, p in holes:
+        b = chess.Board()
+        for y in p[:-1]:
+            b.push_san(y)
+        n = sum(1 for g in games if g["left"] and g["left"]["kind"] == "opponent"
+                and g["left"]["epd"] == b.epd() and g["left"]["san"] == p[-1])
+        seen_holes.add((b.epd(), p[-1]))
+        items.append((x * (1 + n), "Hole", p, x, n, "common reply without an answer"))
+    met, forgot = {}, {}
+    for g in games:
+        l = g["left"]
+        if l and l["kind"] == "opponent" and (l["epd"], l["san"]) not in seen_holes:
+            met.setdefault((l["epd"], l["san"]), []).append(l)
+        if l and l["kind"] == "you":
+            forgot.setdefault(l["epd"], []).append(l)
+    for (key, san), ls in met.items():
+        r = max(reach.get(key, 0), MINOR)
+        items.append((r * (1 + len(ls)), "Unprepared reply", ls[0]["path"] + [san], reach.get(key, 0), len(ls),
+                      "met in your games, no answer in the files"))
+    for key, ls in forgot.items():
+        r = max(reach.get(key, 0), MINOR)
+        played = ", ".join(sorted({l["san"] for l in ls}))
+        items.append((r * (1 + len(ls)), "Forgotten move", ls[0]["path"], reach.get(key, 0), len(ls),
+                      f"you played {played}; the repertoire has {', '.join(ls[0]['expected'])}"))
+    for e in ends:
+        items.append((e["reach"], "Line to extend", e["line"], e["reach"], 0, "; ".join(e["why"])))
+    items.sort(key=lambda it: -it[0])
+
+    def chapter_of(sources):
+        names = sorted({event.get(s, s) for s in sources})
+        return f"`{names[0]}`" if len(names) == 1 else "several chapters (shared trunk)"
+
+    md = f"""---
+tags: [repertoire, review]
+side: {label}
+sources: [{", ".join(os.path.basename(f) for f in files)}]
+---
+
+# {label} repertoire — review
+
+What to work on first in your {label} repertoire. It combines how often a line comes up (Lichess
+games, {band}), the engine's view of your own moves in the major and minor lines (reached in
+≥ {MINOR:g}%), and where your own games (game records) left the repertoire.
+
+"""
+    md += "## Prepare next\n\n"
+    if items:
+        md += "| # | What | Line | Reached in | Your games | Why |\n|---|---|---|---|---|---|\n"
+        for i, (_, kind, p, x, n, why) in enumerate(items[:TOP_ITEMS], 1):
+            md += f"| {i} | {kind} | {movetext(p) or 'start'} | {pct(x)} | {n or ''} | {why} |\n"
+    else:
+        md += "Nothing found.\n"
+    md += (f"\n## Moves to check (engine)\n\nYour moves in lines reached in ≥ {MINOR:g}% that lose ≥ {CHECK_CP} centipawns"
+           f" (dubious: ≥ {DUBIOUS_CP}).\n\n")
+    if missing:
+        md += f"Not evaluated yet: line{'s' if len(missing) > 1 else ''} {', '.join(map(str, missing))}.\n\n"
+    if moves:
+        md += "| Line | Reached in | Your move | Loss (cp) | Engine prefers | Note |\n|---|---|---|---|---|---|\n"
+        for m in sorted(moves.values(), key=lambda m: -m["reach"]):
+            md += (f"| {movetext(m['path'] + [m['san']])} | {pct(m['reach'])} | {m['san']} | {m['cp']} "
+                   f"| {m['best']} | {m['note']} |\n")
+    else:
+        md += "None.\n" if lines else "Not checked.\n"
+    md += "\n## Lines to extend\n\nLines that end where you are worse or where only one move holds.\n\n"
+    if ends:
+        md += "| Line | Reached in | Why |\n|---|---|---|\n"
+        for e in sorted(ends, key=lambda e: -e["reach"]):
+            md += f"| {movetext(e['line'])} | {pct(e['reach'])} | {'; '.join(e['why'])} |\n"
+    else:
+        md += "None.\n" if lines else "Not checked.\n"
+    md += f"\n## Your games\n\nGame records where you played {label}.\n\n"
+    if games:
+        by = {}
+        for g in games:
+            ch = chapter_of(g["left"]["sources"]) if g["left"] else "never left the repertoire"
+            by.setdefault(ch, []).append(g)
+        md += ("| Chapter | Games | Score | Left by you | Left by opponent | End of preparation | Mistakes soon after |\n"
+               "|---|---|---|---|---|---|---|\n")
+        for ch, gs in sorted(by.items(), key=lambda kv: -len(kv[1])):
+            scored = [g["score"] for g in gs if g["score"] is not None]
+            kinds = lambda k: sum(1 for g in gs if g["left"] and g["left"]["kind"] == k)
+            md += (f"| {ch} | {len(gs)} | {sum(scored):g}/{len(scored)} | {kinds('you')} | {kinds('opponent')} "
+                   f"| {kinds('end')} | {sum(len(g['soon']) for g in gs)} |\n")
+        how = {"you": "you left it", "opponent": "opponent left it", "end": "end of preparation"}
+        md += f"\n| Game | Result | Left the repertoire at | How | Mistakes within {MISTAKE_WINDOW // 2} moves |\n|---|---|---|---|---|\n"
+        for g in sorted(games, key=lambda g: g["date"], reverse=True):
+            l = g["left"]
+            at = movetext(l["path"] + [l["san"]]) if l else "—"
+            hw = how[l["kind"]] + (f" (repertoire: {', '.join(l['expected'])})" if l and l["kind"] == "you" else "") if l else "stayed in"
+            md += f"| [[{g['name']}]] | {g['result']} | {at} | {hw} | {', '.join(m['move'] for m in g['soon'])} |\n"
+    else:
+        md += "No game records with this side.\n"
+    os.makedirs(outdir, exist_ok=True)
+    out = f"{outdir}/repertoire_{label.lower()}_review.md"
+    notes = coach_notes(out)
+    md += f"\n{NOTES_MARKER}" + (notes or "\n")
+    open(out, "w", encoding="utf-8").write(md)
+    print(f"items {len(items)}, moves to check {len(moves)}, lines to extend {len(ends)}, games {len(games)}"
+          + (f", lines not evaluated {len(missing)}" if missing else ""))
+
+
 def main(argv):
     work = None
     if argv[:1] == ["--work"] and len(argv) >= 2:
@@ -317,6 +630,17 @@ def main(argv):
         outdir = os.path.abspath(rest[0])
         band = rest[2] if len(rest) == 3 else DEFAULT_BAND
         run = lambda: cmd_report(outdir, band)
+    elif cmd == "lines" and not rest:
+        run = cmd_lines
+    elif cmd == "evals":
+        run = lambda: cmd_evals(rest)
+    elif cmd == "games" and rest:
+        paths = [os.path.abspath(p) for p in rest]
+        run = lambda: cmd_games(paths)
+    elif cmd == "review" and len(rest) in (1, 3) and rest[1:2] in ([], ["--band"]):
+        outdir = os.path.abspath(rest[0])
+        band = rest[2] if len(rest) == 3 else DEFAULT_BAND
+        run = lambda: cmd_review(outdir, band)
     else:
         sys.exit(__doc__)
     if work:

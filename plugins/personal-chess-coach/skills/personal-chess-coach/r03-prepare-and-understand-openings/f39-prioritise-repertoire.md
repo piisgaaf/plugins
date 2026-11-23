@@ -133,6 +133,8 @@ In the chat, give a short summary, not the tables:
 
 > *White, 1800–2000 rapid+classical, 45 lookups: 3 major chapters, 9 minor, 13 rare. Biggest holes: 1…e6 (8.2%), 2.c4 Nf6 after 1…d5 (4.9%). Split proposed for the Slav and Nimzo chapters. Saved to `Repertoire/repertoire_white_{major,minor,rare}.md`.*
 
+Then offer the next step once: *"Shall I also check these lines with the engine and against your games?"* A yes routes to [F29](f29-learn-my-repertoire.md), which reuses this work directory.
+
 ---
 
 ## 1.8.  Practical notes
