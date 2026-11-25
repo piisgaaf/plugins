@@ -100,7 +100,7 @@ Always use the chess_engine tools for technical chess work.
 |---|---|
 | `load_pgn` | Parse a PGN (headers + movetext, or bare move list) and replay it, returning header tags, the starting FEN, and every ply with its SAN move and FEN before/after — use when you need just the move list without engine evaluation |
 | `evaluate_game` | Parse a PGN **and** evaluate every ply with the engine server-side, returning a complete scored ply list with `cp_loss`, `best_move`, and `is_best_move` per ply — **must be called as a task-augmented `tools/call`** (MCP 2025-11-25); see below |
-| `find_puzzles` | Evaluate a game and return its reliable puzzles from three sources: the player's own mistakes, the opponent's missed chances (solved from the opponent's side) and positions along the engine's best line. Takes 1–3 minutes. Used by F14 |
+| `find_puzzles` | Evaluate a game and return its reliable puzzles from three sources: the player's own mistakes, the opponent's missed chances (solved from the opponent's side) and positions along the engine's best line. Takes 1–3 minutes, over several calls: while `complete` is false, call again with exactly the same arguments. Used by F14 |
 | `export_annotated_pgn` | Write an annotated game (move symbols, comments, evaluations, variations) as PGN that Lichess, Scid or Chess.com can import. No engine analysis: it replays the game and every variation so all moves are legal. Used by F38 only; never write an annotated PGN by hand |
 
 **`evaluate_game` is the preferred entry point for F05, F06, F07, and F08** when engine evaluation is needed. It eliminates the FEN transcription failure mode by piping FENs directly from the board replayer into the engine without any LLM transcription step.

@@ -37,7 +37,7 @@ A correct implementation demonstrates:
 
 | Tool | When |
 |---|---|
-| `find_puzzles` | Once per game: `pgn` = the game's PGN, `player_color`, default sources and depth. It evaluates the game itself and takes about 1–3 minutes per game |
+| `find_puzzles` | Per game: `pgn` = the game's PGN, `player_color`, default sources and depth. It evaluates the game itself and takes about 1–3 minutes per game, over several calls (Step 2) |
 | [scripts/games.py](../scripts/games.py) | Batch only: `list` (the player's games, analysed and searched), `pgn` (one game's PGN) and `searched` (log a game as searched). Run it with `python3 -I` and its absolute path (`<skill-folder>` is the folder that contains `SKILL.md`). Exit code 3 means python-chess is missing: run `pip install chess` and retry |
 
 No board images in this step: the puzzles are shown when they are solved (F15).
@@ -53,7 +53,12 @@ No board images in this step: the puzzles are shown when they are solved (F15).
 
 ### 1.5.2.  Step 2 — Find the puzzles
 
-Say it will take a minute or two, then call `find_puzzles`. In the result:
+Say it will take a minute or two, then call `find_puzzles`. Each call stops after about a minute:
+
+- **`complete` is false:** the search is not done yet. Call `find_puzzles` again with exactly the same arguments (same `pgn`, `player_color`, `sources` and `depth`): it carries on where it stopped. Repeat until `complete` is true. Between calls, say in one short line how far it is (*"Game evaluated, 6 of 25 positions checked…"*), from `plies_evaluated`/`ply_count` and `candidates_checked`/`candidates_total`; never show puzzles from an incomplete reply.
+- **`complete` is true:** use this reply only. It holds everything found, also from the earlier calls.
+
+In the complete result:
 
 - `puzzles` holds only puzzles that passed. Each has `source`, `solver`, `ply`, `move_number`, `played_move`, `line` (for `variation`), `fen`, `solution`, `theme_hint` and `pgn`.
 - `candidates_checked` and `rejected` say how many positions were looked at and why the others were not good puzzles.
@@ -108,6 +113,7 @@ Steps 1–3 work as usual; only the puzzle book offer and the batch (the game li
 ## 1.7.  Quality checklist
 
 - [ ] `find_puzzles` was called with the side the player really had
+- [ ] `find_puzzles` was called again with the same arguments until `complete` was true
 - [ ] The report gave the counts by source and no solution, theme or motif
 - [ ] Puzzles were only added to the book after the user's yes
 - [ ] In a batch: the game list was shown first, only the chosen games were searched, skipped games were mentioned, and each finished game was logged with `games.py searched`
