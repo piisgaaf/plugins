@@ -5,6 +5,7 @@
 > "Save this game."
 > "Keep a record of this analysis."
 > (or: "yes" to the coach's offer "Save a record of this game?" at the end of the analysis)
+> "Update the hashes of my game records." (once, see §1.8)
 
 ## 1.2.  Capability unlocked
 
@@ -79,7 +80,7 @@ Gather from the conversation (do not run new analysis):
 - **Root causes**, if F09 ran: per explained mistake, the root cause, the explanation and "What to practise".
 - **Thoughts during the game**, if F10 ran: each question, the user's answer in their own words, and what it shows about this game. Leave out the Thinking Profile summary (tendencies, confidence) and sentences that compare with earlier sessions.
 - **The PGN** as F07 analysed it.
-- **Hash:** run `python3 <skill-folder>/scripts/pgn_hash.py -p "<PGN>"` (the skill folder is the folder that contains `SKILL.md`, as in show-board.md §1.3).
+- **Hash:** run `python3 <skill-folder>/scripts/pgn_hash.py --both -p "<PGN>"` (the skill folder is the folder that contains `SKILL.md`, as in show-board.md §1.3). It prints two lines: the game's **hash** (the one a record stores) and its **legacy hash** (how skill versions before 0.4.4 computed it, still stored in older records). Exit code 3 means python-chess is missing: run `pip install chess` and retry.
 
 **Never write anything from the profile into the record**, and never phrase an entry in terms of earlier games ("again", "as before", "the third time"). The record must read the same whatever the profile says.
 
@@ -91,7 +92,7 @@ Remove characters that Obsidian forbids or that break links: `: * " \ / < > | ? 
 
 ### 1.7.3.  Step 3 — Find an existing record
 
-Search `Game_Analysis/` for a record whose `hash` frontmatter equals the game's hash.
+Search `Game_Analysis/` for a record whose `hash` frontmatter equals the game's hash; if there is none, for one whose `hash` equals the legacy hash.
 
 - **Found** → Step 5 (update). Use that record, even if its name differs from what Step 2 produced.
 - **Not found** → Step 4 (create). If a different game already uses the Step 2 name, append ` (2)`, ` (3)`, … until the name is free.
@@ -108,7 +109,7 @@ Search `Game_Analysis/` for a record whose `hash` frontmatter equals the game's 
 1. **Annotated game and In brief:** if already filled, keep them as they are. Do not add a second annotated move list.
 2. **Mistakes:** add a mistake that is not in the record yet. For a mistake already there, add only what is missing (e.g. its root cause). Never rewrite an earlier entry.
 3. **My thinking during the game:** append the new questions and answers as a dated entry (`**YYYY-MM-DD**`).
-4. **Frontmatter:** add new values to `mistake_categories`, `root_causes` and `analyses`, and set `updated` to today. Keep everything else.
+4. **Frontmatter:** add new values to `mistake_categories`, `root_causes` and `analyses`, and set `updated` to today. If the record was found by its legacy hash, set `hash` to the game's hash. Keep everything else.
 5. **Boards:** run the script again for each board in the record. It writes the same file name for the same position, so this only repairs a missing file and never changes an embed.
 6. **Never touch "My notes"**, and never delete a record, a section or an entry.
 
@@ -121,11 +122,21 @@ Tell the user in one line what happened, with the path, e.g.:
 
 ---
 
-## 1.8.  Quality checklist
+## 1.8.  Updating older records (one-off)
+
+Records saved with skill versions before 0.4.4 hold a **legacy hash**, which depends on how the PGN was written. They are still found (Step 3) and get the new hash on their next update. To give all of them the new hash at once, so the same game in another notation is found from now on, the user can ask for this once. Only with a working folder.
+
+1. **Preview:** `python3 <skill-folder>/scripts/pgn_hash.py --update-records "<working folder>/Game_Analysis" --dry-run`. Tell the user how many records would be updated, and list any `left unchanged` lines with their reason (a hash edited by hand, a PGN that cannot be read).
+2. **On the user's yes:** run the same command without `--dry-run`. Only the `hash:` line of a record changes, and only where it still holds its own legacy hash.
+3. **Same game twice:** a `same game: A, B` line names records that turn out to be one game, saved twice with the old hash. Tell the user, and do not merge or delete them: which one to keep is the user's choice. If they ask to combine them, do it by hand following Step 5 (add what is missing to one record, never rewrite an entry), and only delete the other on their explicit word.
+
+The Player Profile's `analyzed_games` (F08) cannot be updated this way: its entries hold no PGN. F08 compares both hashes, so those games are still recognised in the notation they were analysed in.
+
+## 1.9.  Quality checklist
 
 - [ ] The user said yes (or asked to save) before anything was written
 - [ ] F07 annotated this game before the record was written
-- [ ] An existing record was searched for by `hash` before creating one
+- [ ] An existing record was searched for by `hash` (the hash, then the legacy hash) before creating one
 - [ ] The record follows the template; its name contains no forbidden characters
 - [ ] `date` is the game date from the PGN (today only when the PGN has none)
 - [ ] Nothing from the Player Profile is in the record: no totals, shares, severity, recurring weaknesses or comparisons with earlier games

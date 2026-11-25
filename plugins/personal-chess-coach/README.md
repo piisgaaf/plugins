@@ -27,10 +27,12 @@ Just talk to Claude:
 - "Compare Nf3 and d4 in this position"
 - "Analyze my game" (then paste a PGN)
 - "What kind of mistakes do I keep making?"
+- "Find the puzzles in this game" / "Give me a puzzle"
 
 Analyzing positions, openings and games works in a normal chat in Claude
 Desktop. Getting to know you as a player (your mistakes, style, weaknesses and
-progress), the opening notebook and the records of your analyzed games need
+progress), the opening notebook, the records of your analyzed games and the
+puzzle book need
 **Cowork with a project folder**: that is where your player profile and notes
 are saved. The first time you use one
 of those features, the coach asks which player profile to use, or offers to

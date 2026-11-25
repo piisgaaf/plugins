@@ -11,7 +11,7 @@ eco: {{ECO code, or —}}
 mistake_categories: [{{categories from F08 for this game, e.g. tactical, positional; empty if F08 did not run}}]
 root_causes: [{{root causes from F09 for this game; empty if F09 did not run}}]
 analyses: [{{the features that contributed: f07, f08, f09, f10}}]
-hash: {{pgn_hash.py output}}
+hash: {{the first line of pgn_hash.py --both: the game's hash}}
 tags: [game-record]
 created: {{YYYY-MM-DD}}
 updated: {{YYYY-MM-DD}}

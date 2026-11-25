@@ -1,6 +1,6 @@
 ---
 name: personal-chess-coach
-description: Personal chess coach that helps players improve through position analysis, move explanation, game diagnosis, and long-term coaching. Use this skill whenever the user wants to analyze a chess position or FEN, understand why a move is best, compare candidate moves, understand an opening, analyze a full game or PGN, identify what an opponent is threatening, prioritise an opening repertoire by how often its lines occur, check a repertoire with the engine and against their own games, or receive coaching explanations about chess. Triggers include "analyze this position", "what is the best move", "explain this move", "why did the engine recommend", "compare these moves", "analyze my game", "analyze this PGN", "what is my opponent threatening", "what happens if I do nothing here", "split my repertoire into major and minor lines", "which lines should I prepare first", "where are the holes in my repertoire", "is my repertoire any good", "check my repertoire with the engine", "what should I change in my repertoire", or any chess position expressed as a FEN string or PGN.
+description: Personal chess coach that helps players improve through position analysis, move explanation, game diagnosis, and long-term coaching. Use this skill whenever the user wants to analyze a chess position or FEN, understand why a move is best, compare candidate moves, understand an opening, analyze a full game or PGN, identify what an opponent is threatening, prioritise an opening repertoire by how often its lines occur, check a repertoire with the engine and against their own games, turn the tactics they missed into puzzles, solve puzzles, keep a puzzle book, or receive coaching explanations about chess. Triggers include "analyze this position", "what is the best move", "explain this move", "why did the engine recommend", "compare these moves", "analyze my game", "analyze this PGN", "what is my opponent threatening", "what happens if I do nothing here", "split my repertoire into major and minor lines", "which lines should I prepare first", "where are the holes in my repertoire", "is my repertoire any good", "check my repertoire with the engine", "what should I change in my repertoire", "find the puzzles in this game", "give me a puzzle", "start a puzzle session", "add these to my puzzle book", "export my puzzles", or any chess position expressed as a FEN string or PGN.
 ---
 
 # 1.  Personal Chess Coach
@@ -12,7 +12,7 @@ Unlike traditional chess software that answers **"What is the best move?"**, thi
 - What plan does it support?
 - Why is my candidate move weaker?
 
-The **Player Profile** is the central domain model of the features that get to know the player (F08–F13). Analyzing positions and games (F01–F03, F05–F07, F35, F38) and understanding openings (F04) need no profile and work in a normal Claude Desktop chat as well as in Cowork: see §1.7. In Cowork, an analyzed game can be saved as a game record (F37), independent of the profile, openings can be kept as idea cards in an opening notebook (F36), a repertoire can be split into major, minor and rare lines (F39) and reviewed with the engine and the game records (F29).
+The **Player Profile** is the central domain model of the features that get to know the player (F08–F13). Analyzing positions and games (F01–F03, F05–F07, F35, F38) and understanding openings (F04) need no profile and work in a normal Claude Desktop chat as well as in Cowork: see §1.7. In Cowork, an analyzed game can be saved as a game record (F37), independent of the profile, openings can be kept as idea cards in an opening notebook (F36), a repertoire can be split into major, minor and rare lines (F39) and reviewed with the engine and the game records (F29). The tactics missed in a game become engine-checked puzzles (F14, F15), which can be solved in any chat; in Cowork they are kept in a puzzle book (F16).
 
 ---
 
@@ -52,6 +52,14 @@ The **Player Profile** is the central domain model of the features that get to k
 | F39 — Prioritise My Repertoire | [f39-prioritise-repertoire.md](r03-prepare-and-understand-openings/f39-prioritise-repertoire.md) | Active |
 | F29 — Learn My Opening Repertoire | [f29-learn-my-repertoire.md](r03-prepare-and-understand-openings/f29-learn-my-repertoire.md) | Active |
 
+### Release 0.4 — Train My Weaknesses
+
+| Feature | Detail file | Status |
+|---|---|---|
+| F14 — Find My Missed Tactical Opportunities | [f14-find-missed-tactics.md](r04-train-my-weaknesses/f14-find-missed-tactics.md) | Active |
+| F15 — Give Me Reliable Puzzles | [f15-reliable-puzzles.md](r04-train-my-weaknesses/f15-reliable-puzzles.md) | Active |
+| F16 — Build My Personal Puzzle Book | [f16-puzzle-book.md](r04-train-my-weaknesses/f16-puzzle-book.md) | Active |
+
 ---
 
 ## 1.2.  MCP tools (chess server)
@@ -69,6 +77,7 @@ Always use the chess_engine tools for technical chess work.
 | `compare_moves` | Evaluate two or more candidate moves at equal depth and rank them by centipawn loss relative to the strongest candidate |
 | `get_variation` | Get the principal variation (main line) from a position to a given depth. Each ply is labelled with its side (`plies`, `line`). Pass `for_side` to get a hypothetical line for the side **not** to move (that side's plan) |
 | `get_threats` | Detect what the side NOT to move is threatening, via a null-move probe; returns candidate threats with an `eval_swing_cp` for severity judgment |
+| `build_puzzle` | Check whether a position is a reliable puzzle for the side to move (one good move at every step, confirmed deeper); returns the solution labelled by side, a `theme_hint` (mate, material, defence) and the puzzle as PGN, or the `reason` it is not a puzzle. Used by F15 |
 
 ### 1.2.2.  Board tools
 
@@ -91,6 +100,7 @@ Always use the chess_engine tools for technical chess work.
 |---|---|
 | `load_pgn` | Parse a PGN (headers + movetext, or bare move list) and replay it, returning header tags, the starting FEN, and every ply with its SAN move and FEN before/after — use when you need just the move list without engine evaluation |
 | `evaluate_game` | Parse a PGN **and** evaluate every ply with the engine server-side, returning a complete scored ply list with `cp_loss`, `best_move`, and `is_best_move` per ply — **must be called as a task-augmented `tools/call`** (MCP 2025-11-25); see below |
+| `find_puzzles` | Evaluate a game and return its reliable puzzles from three sources: the player's own mistakes, the opponent's missed chances (solved from the opponent's side) and positions along the engine's best line. Takes 1–3 minutes. Used by F14 |
 | `export_annotated_pgn` | Write an annotated game (move symbols, comments, evaluations, variations) as PGN that Lichess, Scid or Chess.com can import. No engine analysis: it replays the game and every variation so all moves are legal. Used by F38 only; never write an annotated PGN by hand |
 
 **`evaluate_game` is the preferred entry point for F05, F06, F07, and F08** when engine evaluation is needed. It eliminates the FEN transcription failure mode by piping FENs directly from the board replayer into the engine without any LLM transcription step.
@@ -198,14 +208,17 @@ When the user provides a position or game, determine which feature applies:
 14. **User asks what their opponent is threatening, what happens if they do nothing, or what they might be missing in a position** → [f35-see-opponents-threats.md](r01-understand-my-chess/f35-see-opponents-threats.md)
 15. **User says "add this to my opening notebook" / "save this opening", names an opening to add to the notebook, asks to start a card from a position or to make a key position its own card, or answers yes to "Add this to your opening notebook?"** → [f36-opening-notebook.md](r03-prepare-and-understand-openings/f36-opening-notebook.md)
 16. **User asks for the annotated game as a PGN file (to import into Lichess, Scid, Chess.com or a chess GUI), or answers yes to F07's PGN offer** → [f38-export-annotated-pgn.md](r01-understand-my-chess/f38-export-annotated-pgn.md). It needs an F07 analysis of the game; without one, it runs F07 first
-17. **User says "save this game" / "keep a record of this game", or answers yes to "Save a record of this game?" or "Add this to the game record?"** → [f37-keep-game-records.md](r02-understand-me-as-a-player/f37-keep-game-records.md). It needs an F07 analysis of the game; without one, it runs F07 first
+17. **User says "save this game" / "keep a record of this game", or answers yes to "Save a record of this game?" or "Add this to the game record?"; or asks to update the hashes of their game records (F37 §1.8)** → [f37-keep-game-records.md](r02-understand-me-as-a-player/f37-keep-game-records.md). It needs an F07 analysis of the game; without one, it runs F07 first
 18. **User asks to split or prioritise their opening repertoire (PGN files), which lines are major/minor/rare, what to prepare first, where the holes in their repertoire are, whether to split a chapter, or to update their repertoire overview** → [f39-prioritise-repertoire.md](r03-prepare-and-understand-openings/f39-prioritise-repertoire.md). A question about one opening's plans is F04, not this. Whether the repertoire is sound or what to change in it is F29
 19. **User asks whether their repertoire is any good, to check it with the engine, where their games leave the repertoire, what to change in it or what to work on next in their openings, or to update their repertoire review** → [f29-learn-my-repertoire.md](r03-prepare-and-understand-openings/f29-learn-my-repertoire.md). It runs F39's frequency loop first when that did not run in this conversation
-20. **Unclear** → validate the FEN first, then ask what the user wants to know.
+20. **User asks for the puzzles or missed tactics in a game, to turn their mistakes into puzzles, or for puzzles from their games or game records; asks which of their games were analysed or searched for puzzles; or answers yes to "Find the puzzles in this game?"** → [f14-find-missed-tactics.md](r04-train-my-weaknesses/f14-find-missed-tactics.md)
+21. **User asks whether a position is a good puzzle or to make a puzzle of it, or is solving a puzzle shown in this conversation (an answer, a hint, "show the solution")** → [f15-reliable-puzzles.md](r04-train-my-weaknesses/f15-reliable-puzzles.md)
+22. **User asks for a puzzle or a puzzle session, to add puzzles to their puzzle book, how they are doing with their puzzles, or to export their puzzles; or answers yes to "Add them to your puzzle book?"** → [f16-puzzle-book.md](r04-train-my-weaknesses/f16-puzzle-book.md). Solving goes on with F15
+23. **Unclear** → validate the FEN first, then ask what the user wants to know.
 
 Always validate any FEN with `validate_fen` before analysis.
 
-Routes 8–13 (F08–F13) use the Player Profile and routes 15 (F36), 17 (F37), 18 (F39) and 19 (F29) write notes: all need a working folder. Before following them, apply §1.7.1 and §1.7.3.
+Routes 8–13 (F08–F13) use the Player Profile and routes 15 (F36), 17 (F37), 18 (F39), 19 (F29) and 22 (F16) write notes: all need a working folder. F14 (route 20) writes only in its batch over the player's games (the search log in `Puzzles/`). Before following them, apply §1.7.1 and §1.7.3.
 
 ### 1.5.1.  Plan for a side that is not to move
 
@@ -228,7 +241,7 @@ Whenever a feature file says "show the board", follow [rendering/show-board.md](
 
 The Player Profile is the central domain model of F08–F13. It accumulates structured knowledge about the player across sessions.
 
-**Location:** `<name>.yaml` in the root of the **working folder**: the folder the user has mounted (the Cowork project folder, which may be an Obsidian vault or a subfolder of it). The opening notebook ([F36](r03-prepare-and-understand-openings/f36-opening-notebook.md), in `Openings/`), the game records ([F37](r02-understand-me-as-a-player/f37-keep-game-records.md), in `Game_Analysis/`) and the repertoire overview and review ([F39](r03-prepare-and-understand-openings/f39-prioritise-repertoire.md) and [F29](r03-prepare-and-understand-openings/f29-learn-my-repertoire.md), in `Repertoire/`) live in the same folder. This is a plain YAML file on the user's computer — no database or external service required.
+**Location:** `<name>.yaml` in the root of the **working folder**: the folder the user has mounted (the Cowork project folder, which may be an Obsidian vault or a subfolder of it). The opening notebook ([F36](r03-prepare-and-understand-openings/f36-opening-notebook.md), in `Openings/`), the game records ([F37](r02-understand-me-as-a-player/f37-keep-game-records.md), in `Game_Analysis/`) the repertoire overview and review ([F39](r03-prepare-and-understand-openings/f39-prioritise-repertoire.md) and [F29](r03-prepare-and-understand-openings/f29-learn-my-repertoire.md), in `Repertoire/`) and the puzzle book ([F16](r04-train-my-weaknesses/f16-puzzle-book.md), in `Puzzles/`) live in the same folder. This is a plain YAML file on the user's computer — no database or external service required.
 
 ### 1.7.1.  Working folder: decide once per conversation
 
@@ -239,9 +252,9 @@ Decide from your own tools, before the first feature that needs it, and keep the
 
 ### 1.7.2.  When to resolve the profile
 
-Resolve and read the full profile only when the conversation routes to one of F08–F13. Never at the start of a session, and never for F01–F07, F29, F35, F36, F37, F38 or F39: those features do not use it. F29 reads game records, never the profile. Game records (F37) hold only what was found about one game and never copy anything from the profile. A profile is only ever built from game records when the user explicitly asks for it.
+Resolve and read the full profile only when the conversation routes to one of F08–F13. Never at the start of a session, and never for F01–F07, F14–F16, F29, F35, F36, F37, F38 or F39: those features do not use it. F29 reads game records, never the profile. Game records (F37) hold only what was found about one game and never copy anything from the profile. A profile is only ever built from game records when the user explicitly asks for it.
 
-**Player details only:** any feature may read just the `player` section (§1.7.5) when it needs the player's names, rating or games folder: the game list (§1.4.1), the rating band (F04 Step 5, F39 Step 1, F29 Step 1), the repertoire files (F39, F29), or the user referring to one of their games without pasting it. Do this only with a working folder and only when the profile file is known without asking: named in the project instructions, or the only `*.yaml` file in the working folder's root. Never ask which profile to use just for this; if it is not known, continue without the details. Read the section at most once per conversation.
+**Player details only:** any feature may read just the `player` section (§1.7.5) when it needs the player's names, rating or games folder: the game list (§1.4.1), the rating band (F04 Step 5, F39 Step 1, F29 Step 1), the repertoire files (F39, F29), the side the player had and their games folder (F14), or the user referring to one of their games without pasting it. Do this only with a working folder and only when the profile file is known without asking: named in the project instructions, or the only `*.yaml` file in the working folder's root. Never ask which profile to use just for this; if it is not known, continue without the details. Read the section at most once per conversation.
 
 **Resolving which profile to use** (only with a working folder):
 1. If the project instructions (e.g. a system prompt or Cowork configuration) specify a profile filename, use that file.
@@ -262,8 +275,11 @@ Resolve and read the full profile only when the conversation routes to one of F0
 | F37 — Game records | Do not offer "Save a record of this game?". If the user asks to save, say so in one line (see below) |
 | F39 — Repertoire | Do not run: it reads the repertoire PGNs from the folder and writes its overview there. Say so in one line (see below) |
 | F29 — Repertoire review | Do not run: it reads the repertoire PGNs and game records from the folder and writes its review there. Say so in one line (see below) |
+| F14 — Missed tactics | Find and report the puzzles of a game as usual; do not offer the puzzle book, and do not run the batch (the list of the player's games) |
+| F15 — Puzzles | Works as usual: checking answers needs no folder |
+| F16 — Puzzle book | Do not run: the puzzle book lives in the folder. Say so in one line (see below); puzzles found in this conversation can still be solved (F15) |
 
-Say once per conversation, in one short line, why nothing is saved, e.g.: *"(Not saved: your player profile, opening notebook, game records and repertoire overview need Cowork with a project folder.)"* Do not repeat it after every answer.
+Say once per conversation, in one short line, why nothing is saved, e.g.: *"(Not saved: your player profile, opening notebook, game records, repertoire overview and puzzle book need Cowork with a project folder.)"* Do not repeat it after every answer.
 
 ### 1.7.4.  Rules for reading and writing
 
@@ -297,9 +313,9 @@ player:
 
 | Field | Used by |
 |---|---|
-| `name`, `aliases`, `usernames` | The game list (§1.4.1) and every feature that must know which side the player played |
+| `name`, `aliases`, `usernames` | The game list (§1.4.1), F14's list of the player's games, and every feature that must know which side the player played |
 | `rating` | F04 Step 5, F39 Step 1, F29 Step 1 |
-| `games_folder` | Finding a game the user refers to ("my last game", a date or an opponent) without pasting it. Multi-game files follow §1.4 |
+| `games_folder` | Finding a game the user refers to ("my last game", a date or an opponent) without pasting it. Multi-game files follow §1.4. F14 lists and searches all its games |
 | `repertoire` | F39, F29: the repertoire PGNs per side and the rating band to look them up at |
 | `library`, `study_plan` | Not used yet: keep them, never remove them |
 

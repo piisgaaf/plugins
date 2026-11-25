@@ -275,19 +275,19 @@ If the `player` section lacks any of the other fields from [SKILL.md §1.7.5](..
 
 ### 1.6.2.  Step 2 — Deduplicate
 
-Compute the PGN hash by running:
+Compute the PGN hash by running (`<skill-folder>` is the folder that contains `SKILL.md`):
 
 ```bash
-python3 <project_root>/chess_engine/priv/personal-chess-coach/scripts/pgn_hash.py -p "<raw PGN text>"
+python3 <skill-folder>/scripts/pgn_hash.py --both -p "<raw PGN text>"
 ```
 
 Or, if the PGN was saved to a file:
 
 ```bash
-python3 <project_root>/chess_engine/priv/personal-chess-coach/scripts/pgn_hash.py -f <path_to_pgn>
+python3 <skill-folder>/scripts/pgn_hash.py --both -f <path_to_pgn>
 ```
 
-Compare the resulting hash against every `hash` field in `analyzed_games`.
+It prints two lines: the game's **hash** and its **legacy hash** (how skill versions before 0.4.4 computed it). Compare both against every `hash` field in `analyzed_games`: entries made by older versions hold the legacy hash. A new entry always gets the first line, the hash. Exit code 3 means python-chess is missing: run `pip install chess` and retry.
 
 **If a match is found:** stop immediately. Tell the user which game was already analyzed (show the matching entry's `id`, `date`, `opponent`, and `result`), and do not proceed further. Example message:
 
@@ -367,7 +367,7 @@ Do not surface raw `cp_loss` values or centipawn numbers. Reference specific mov
 ### 1.6.8.  Step 8 — Offer next steps
 
 End with a targeted offer based on the dominant weakness category:
-- Tactical weakness → "Want me to explain why you missed the tactic on move [N]?" → triggers F02
+- Tactical weakness → "Want me to explain why you missed the tactic on move [N]?" → triggers F02, or "Turn the tactics you missed into puzzles?" → triggers [F14](../r04-train-my-weaknesses/f14-find-missed-tactics.md)
 - Positional weakness → "Shall I go deeper on the positional decision at move [N]?" → triggers F02
 - Opening weakness → "Want to understand what the opening called for instead?" → triggers F04
 

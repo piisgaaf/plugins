@@ -1,0 +1,81 @@
+filters:
+  and:
+    - file.hasTag("puzzle")
+formulas:
+  puzzle: "file.asLink()"
+properties:
+  formula.puzzle:
+    displayName: Puzzle
+  note.status:
+    displayName: Status
+  note.source:
+    displayName: Source
+  note.solver:
+    displayName: Solver
+  note.theme:
+    displayName: Theme
+  note.motif:
+    displayName: Motif
+  note.sources:
+    displayName: From
+  note.attempts:
+    displayName: Attempts
+  note.last_tried:
+    displayName: Last tried
+  note.added:
+    displayName: Added
+views:
+  - type: table
+    name: To do
+    filters:
+      or:
+        - note.status == "new"
+        - note.status == "failed"
+    order:
+      - formula.puzzle
+      - note.status
+      - note.theme
+      - note.source
+      - note.sources
+      - note.last_tried
+    sort:
+      - property: note.status
+        direction: DESC
+      - property: note.added
+        direction: ASC
+  - type: table
+    name: By source
+    groupBy:
+      property: note.source
+      direction: ASC
+    order:
+      - formula.puzzle
+      - note.status
+      - note.theme
+      - note.sources
+      - note.added
+  - type: table
+    name: By motif
+    groupBy:
+      property: note.motif
+      direction: ASC
+    order:
+      - formula.puzzle
+      - note.status
+      - note.theme
+      - note.source
+      - note.attempts
+  - type: table
+    name: Failed
+    filters:
+      and:
+        - note.status == "failed"
+    order:
+      - formula.puzzle
+      - note.theme
+      - note.motif
+      - note.attempts
+      - note.last_tried
+    sort:
+      - property: note.last_tried
+        direction: ASC
