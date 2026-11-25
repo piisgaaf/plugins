@@ -45,13 +45,14 @@ Call `build_puzzle` with the FEN. If `valid` is false, say why in one sentence a
 
 | `reason` | Say |
 |---|---|
+| `unbalanced` | One side is already a piece or more up, so the answer is too obvious (or it is the middle of an exchange) |
 | `two_good_moves` | Two moves are about equally good, so there is no single answer |
 | `winning_anyway` | Several moves win: the position is already won |
 | `no_clear_win` | No move wins or saves the position clearly |
 | `only_one_legal_move` | There is only one legal move |
-| `trivial_recapture` | The answer is just winning back the material |
 | `game_over` | The game is already over in this position |
 | `not_confirmed` | A deeper search did not confirm the answer |
+| `mate_not_reached` | There is a mate, but it is too long or can be reached in more than one way |
 
 ### 1.5.2.  Step 2 — Show the puzzle
 

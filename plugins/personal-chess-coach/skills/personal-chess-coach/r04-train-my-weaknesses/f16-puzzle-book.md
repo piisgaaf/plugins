@@ -47,7 +47,7 @@ A note is named after the position (`Puzzle <hash>.md`, the same hash as its boa
 
 | Tool | When |
 |---|---|
-| [scripts/puzzlebook.py](../scripts/puzzlebook.py) | Every read and write of a puzzle note: `add`, `next`, `record`, `stats`, `export`. Run it with `python3 -I` and its absolute path (`<skill-folder>` is the folder that contains `SKILL.md`). Exit code 3 means python-chess is missing: run `pip install chess` and retry |
+| [scripts/puzzlebook.py](../scripts/puzzlebook.py) | Every read and write of a puzzle note: `add`, `next`, `record`, `update`, `remove`, `stats`, `export`. Run it with `python3 -I` and its absolute path (`<skill-folder>` is the folder that contains `SKILL.md`). Exit code 3 means python-chess is missing: run `pip install chess` and retry |
 | Show the board as an **SVG image** ([show-board.md](../rendering/show-board.md)) | Saving each new puzzle's board in `Puzzles/boards/` (show-board.md §1.5), from the solver's side; and showing a puzzle when solving (F15) |
 | F15's tools | Solving: `puzzlebook.py check` and `evaluate_move` |
 
@@ -132,6 +132,28 @@ Each puzzle is a game that starts from the puzzle position (`[SetUp "1"]`/`[FEN]
 
 ---
 
+### 1.6.6.  Correcting or removing a puzzle
+
+When the user says a puzzle is wrong (a solution that does not work, a position that is too easy), or asks to check the book again:
+
+1. **Check it:** call `build_puzzle` with the note's `fen` (default depth). Say what it found in one line: the corrected solution, or the `reason` it is not a puzzle (F15's reason table).
+2. **Ask:** *"Correct the solution in the note?"* or *"Remove it from your puzzle book?"*. Change nothing before the user's yes.
+3. **Correct** (`valid` is true): pass the tool's `pgn` on stdin:
+   ```bash
+   printf '%s\n' "<pgn>" | python3 -I <skill-folder>/scripts/puzzlebook.py --dir "<working folder>/Puzzles" update "<note>" \
+     --solution "<the solution's SAN moves, space-separated>" [--theme <theme_hint>] --pgn -
+   ```
+   `--theme` only when `theme_hint` differs from the note's theme. The note keeps its sources, results and the user's own notes.
+4. **Remove** (`valid` is false, or the user asks for it):
+   ```bash
+   python3 -I <skill-folder>/scripts/puzzlebook.py --dir "<working folder>/Puzzles" remove "<note>"
+   ```
+   This removes the note and its board. The script refuses a note that was tried or has the user's own notes, and says why: tell the user, and only add `--force` after they confirm again.
+
+Never delete or edit a puzzle note or its board by hand.
+
+---
+
 ## 1.7.  Without a working folder
 
 F16 does not run: the puzzle book lives in the folder. Say so in one line ([SKILL.md §1.7.3](../SKILL.md#173--without-a-working-folder)). Puzzles found in this conversation (F14) can still be solved (F15).
@@ -145,3 +167,4 @@ F16 does not run: the puzzle book lives in the folder. Say so in one line ([SKIL
 - [ ] A session used `next` with `--exclude` for the notes already shown, and every result went through `record`
 - [ ] No front matter was edited by hand; in the body only the idea placeholder was replaced
 - [ ] The export contained the puzzles asked for, and the user was told how to use it
+- [ ] A puzzle was only corrected (`update`) or removed (`remove`) after `build_puzzle` checked it and the user said yes

@@ -3,8 +3,9 @@
 
 Used by F14, F15 and F16 (r04-train-my-weaknesses/). Every write to a puzzle note
 goes through this script; the skill never edits one by hand. Which games were
-searched for puzzles is kept by games.py, not here. Notes are built from templates/puzzle.md; only their front matter is
-ever rewritten, so text the user adds in the body (e.g. under "My notes") is kept.
+searched for puzzles is kept by games.py, not here. Notes are built from templates/puzzle.md; after that only their front matter is
+rewritten (and, by `update`, the solution and PGN the script wrote), so text the user
+adds under "My notes" is kept.
 
   puzzlebook.py --dir <Puzzles> add --fen FEN --solver white|black --source S
                 --solution "SAN ..." --theme T [--record NAME | --game LABEL] [--date YYYY-MM-DD]
@@ -13,10 +14,18 @@ ever rewritten, so text the user adds in the body (e.g. under "My notes") is kep
   puzzlebook.py --dir <Puzzles> next [--fresh] [--source S] [--motif M] [--theme T]
                 [--status S] [--since YYYY-MM-DD] [--exclude NOTE ...]
   puzzlebook.py --dir <Puzzles> record <note> solved|solved_with_hint|failed
+  puzzlebook.py --dir <Puzzles> update <note> --solution "SAN ..." [--theme T] --pgn -
+                                            a corrected solution (PGN on stdin); keeps the
+                                            history, sources and the user's notes
+  puzzlebook.py --dir <Puzzles> remove <note> [--force]
+                                            the note and its board; --force for a note that
+                                            was tried or has the user's own notes
   puzzlebook.py --dir <Puzzles> stats [--since YYYY-MM-DD]
   puzzlebook.py --dir <Puzzles> export <out.pgn> [--status S] [--source S] [--motif M]
   puzzlebook.py check --fen FEN --solution "SAN ..." --step N "<answer>"
                                             check an answer (no folder needed)
+
+`update` and `remove` are only run after the user's yes.
 
 The note for a position is "Puzzle <hash>.md", where <hash> is the board's file
 name from fen_to_svg.py -d (first four FEN fields), so the same position is always
@@ -179,6 +188,53 @@ def movetext(fen, sans):
     return " ".join(out)
 
 
+def task_text(solver, theme):
+    side = "White" if solver == "white" else "Black"
+    return {"mate": f"{side} to move and mate.", "material": f"{side} to move and win.",
+            "defence": f"{side} to move: find the only move."}[theme]
+
+
+def read_pgn(args, fen, flag):
+    """The puzzle PGN from stdin (--pgn -): it must start from fen's position."""
+    pgn = sys.stdin.read() if opt(args, "--pgn") == "-" else ""
+    m = re.search(r'\[FEN "([^"]+)"\]', pgn)
+    if not m or " ".join(m.group(1).split()[:4]) != " ".join(fen.split()[:4]):
+        fail(f"the PGN on stdin must have a [FEN] tag with the same position as {flag}")
+    return pgn
+
+
+def solution_movetext(fen, solution):
+    sans = solution.split()
+    text = movetext(fen, sans)
+    if len(sans) % 2 == 0:
+        fail("a solution ends with a solver move: it has an odd number of moves")
+    return sans, text
+
+
+# ---------------------------------------------------------------- notes by name
+def note_file(folder, name):
+    path = name if os.path.isabs(name) else os.path.join(folder, os.path.basename(name))
+    if not os.path.exists(path):
+        fail(f"no note {path}")
+    return path
+
+
+def split_own_notes(body):
+    """The body before "## My notes" (written by this script) and the user's part."""
+    i = body.find("\n## My notes")
+    return (body, "") if i < 0 else (body[:i], body[i:])
+
+
+def own_notes(body):
+    """The text the user wrote under "## My notes", without the heading."""
+    return split_own_notes(body)[1].replace("\n## My notes", "", 1).strip()
+
+
+def board_of(body):
+    m = re.search(r"!\[\[([^\]|]+\.svg)", body)
+    return m.group(1) if m else None
+
+
 # ---------------------------------------------------------------- add
 def opt(args, name, default=None):
     if name in args:
@@ -224,14 +280,8 @@ def cmd_add(folder, args):
     board = board_for(fen)
     if (board.turn == chess.WHITE) != (solver == "white"):
         fail(f"the solver ({solver}) is not the side to move in the FEN")
-    sans = solution.split()
-    solution_text = movetext(fen, sans)
-    if len(sans) % 2 == 0:
-        fail("a solution ends with a solver move: it has an odd number of moves")
-    pgn = sys.stdin.read() if opt(args, "--pgn") == "-" else ""
-    m = re.search(r'\[FEN "([^"]+)"\]', pgn)
-    if not m or " ".join(m.group(1).split()[:4]) != " ".join(fen.split()[:4]):
-        fail("the PGN on stdin must have a [FEN] tag with the same position as --fen")
+    sans, solution_text = solution_movetext(fen, solution)
+    pgn = read_pgn(args, fen, "--fen")
 
     record, date, move = opt(args, "--record", ""), opt(args, "--date", ""), opt(args, "--move", "")
     game = opt(args, "--game", "")
@@ -273,9 +323,7 @@ def cmd_add(folder, args):
             line_text = " ".join(parts)
         else:
             line_text = line
-    side = "White" if solver == "white" else "Black"
-    task = {"mate": f"{side} to move and mate.", "material": f"{side} to move and win.",
-            "defence": f"{side} to move: find the only move."}[theme]
+    task = task_text(solver, theme)
     board_name = f"{h}-black.svg" if solver == "black" else f"{h}.svg"
     values = {
         "fen": fen, "solver": solver, "source": source, "move": move, "line": line_text,
@@ -332,9 +380,7 @@ def cmd_next(folder, args):
 def cmd_record(folder, args):
     if len(args) != 2 or args[1] not in RESULTS:
         fail(f"record <note> {'|'.join(RESULTS)}")
-    path = args[0] if os.path.isabs(args[0]) else os.path.join(folder, os.path.basename(args[0]))
-    if not os.path.exists(path):
-        fail(f"no note {path}")
+    path = note_file(folder, args[0])
     data, body = read_note(path)
     data["status"] = args[1]
     data["attempts"] = str(int(data.get("attempts") or 0) + 1)
@@ -343,6 +389,65 @@ def cmd_record(folder, args):
     data["history"] = (hist if isinstance(hist, list) else [hist]) + [f"{today()}: {args[1]}"]
     write_note(path, data, body)
     print(f"{os.path.basename(path)}: {args[1]}, attempts {data['attempts']}")
+
+
+# ---------------------------------------------------------------- update / remove
+def cmd_update(folder, args):
+    if not args or args[0].startswith("--"):
+        fail('update <note> --solution "SAN ..." [--theme T] --pgn -')
+    path, rest = note_file(folder, args[0]), args[1:]
+    data, body = read_note(path)
+    solution = opt(rest, "--solution")
+    if not solution:
+        fail("update needs --solution")
+    theme = opt(rest, "--theme", data.get("theme"))
+    if theme not in THEMES:
+        fail(f"--theme {'|'.join(THEMES)}")
+    fen, solver = data.get("fen") or "", data.get("solver")
+    sans, solution_text = solution_movetext(fen, solution)
+    pgn = read_pgn(rest, fen, "the note's fen")
+
+    # Only the part this script wrote changes; the user's notes stay as they are.
+    head, mine = split_own_notes(body)
+    head, found = re.subn(r"(> \[!success\]- Solution\n> )[^\n]*",
+                          lambda m: m.group(1) + solution_text, head, count=1)
+    if not found:
+        fail(f"{os.path.basename(path)}: no Solution callout")
+    head, found = re.subn(r"```pgn\n.*?\n```", lambda m: "```pgn\n" + pgn.strip() + "\n```",
+                          head, count=1, flags=re.S)
+    if not found:
+        fail(f"{os.path.basename(path)}: no PGN block")
+    old_task, new_task = task_text(solver, data.get("theme")), task_text(solver, theme)
+    head = head.replace(f"**{old_task}**", f"**{new_task}**", 1)
+
+    data["solution"], data["theme"] = solution_text, theme
+    data["solver_moves"] = str((len(sans) + 1) // 2)
+    write_note(path, data, head + mine)
+    print(f"updated: {os.path.basename(path)}: {solution_text}")
+
+
+def cmd_remove(folder, args):
+    if not args or args[0].startswith("--"):
+        fail("remove <note> [--force]")
+    path = note_file(folder, args[0])
+    name = os.path.basename(path)
+    data, body = read_note(path)
+    if "--force" not in args[1:]:
+        why = []
+        if int(data.get("attempts") or 0) > 0:
+            why.append(f"it was tried {data['attempts']} time(s)")
+        if own_notes(body):
+            why.append("it has your own notes")
+        if why:
+            fail(f"{name} not removed: {' and '.join(why)}; use --force to remove it anyway")
+    board = board_of(body)
+    os.remove(path)
+    board_path = os.path.join(os.path.dirname(path), "boards", board) if board else None
+    if board_path and os.path.exists(board_path):
+        os.remove(board_path)
+        print(f"removed: {name} (board {board})")
+    else:
+        print(f"removed: {name} (no board {board or 'linked'})")
 
 
 def cmd_stats(folder, args):
@@ -434,10 +539,11 @@ def main(argv):
     cmd, *rest = argv or ["help"]
     if cmd == "check":
         return cmd_check(rest)
-    if folder is None or cmd not in ("add", "next", "record", "stats", "export"):
+    commands = {"add": cmd_add, "next": cmd_next, "record": cmd_record, "update": cmd_update,
+                "remove": cmd_remove, "stats": cmd_stats, "export": cmd_export}
+    if folder is None or cmd not in commands:
         sys.exit(__doc__)
-    {"add": cmd_add, "next": cmd_next, "record": cmd_record,
-     "stats": cmd_stats, "export": cmd_export}[cmd](folder, rest)
+    commands[cmd](folder, rest)
 
 
 if __name__ == "__main__":
