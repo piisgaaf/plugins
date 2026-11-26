@@ -196,7 +196,9 @@ def task_text(solver, theme):
 
 def read_pgn(args, fen, flag):
     """The puzzle PGN from stdin (--pgn -): it must start from fen's position."""
-    pgn = sys.stdin.read() if opt(args, "--pgn") == "-" else ""
+    if opt(args, "--pgn") != "-":
+        fail("pass the puzzle PGN on stdin with --pgn -")
+    pgn = sys.stdin.read()
     m = re.search(r'\[FEN "([^"]+)"\]', pgn)
     if not m or " ".join(m.group(1).split()[:4]) != " ".join(fen.split()[:4]):
         fail(f"the PGN on stdin must have a [FEN] tag with the same position as {flag}")

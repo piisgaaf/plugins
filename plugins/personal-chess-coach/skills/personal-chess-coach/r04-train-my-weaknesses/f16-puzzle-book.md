@@ -69,9 +69,9 @@ After the user's yes (F14), for each puzzle from `find_puzzles`:
      --solution "<the solution's SAN moves, space-separated>" \
      --record "<game record name, without .md>" | --game "<label from games.py>" --date <game date> \
      --move "<move_number and played_move, e.g. 24.Rxf7 or 17...Qd7>" \
-     [--line "<line, SAN, space-separated>"] [--motif <motif from F14>]
+     [--line "<line, SAN, space-separated>"] [--motif <motif from F14>] --pgn -
    ```
-   `--line` only for `variation` puzzles. `--record` when the game has a game record; otherwise `--game` with the game's `label` from `games.py` (F14's batch), or neither for a game pasted in the chat. `--date` is the game's date. The script checks that the solution is legal from the FEN and that the PGN starts from the same position, and stops otherwise: never "fix" a value by hand, take it again from the tool result.
+   `--pgn -` makes the script read the PGN from stdin; without it, `add` stops. `--line` only for `variation` puzzles. `--record` when the game has a game record; otherwise `--game` with the game's `label` from `games.py` (F14's batch), or neither for a game pasted in the chat. `--date` is the game's date. The script checks that the solution is legal from the FEN and that the PGN starts from the same position, and stops otherwise: never "fix" a value by hand, take it again from the tool result.
 2. **Board:** the script prints `added: Puzzle <hash>.md (board <name>)`. Save the board with `fen_to_svg.py -d "<working folder>/Puzzles/boards"` (`--flip` when the solver is Black, show-board.md §1.5). The name it prints must be the board name `add` printed; if it differs, say so and stop.
 3. When the script prints `exists` (the same position from another game), there is nothing to do: it added the game as a source.
 
